@@ -2,13 +2,13 @@
 (() => {
   const root = document.getElementById('sparkx-cost');
   const el = key => root.querySelector('#sx-' + key);
-  const fields = ['name','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat'];
+  const fields = ['name','notes','status','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat'];
   const money = value => new Intl.NumberFormat('es-CL', {style:'currency',currency:'CLP',maximumFractionDigits:0}).format(value);
   let result = null;
   function read() { return Object.fromEntries(fields.map(key => [key, el(key).type === 'checkbox' ? el(key).checked : el(key).value])); }
   function calculate(s) {
     const n = key => Number(s[key]);
-    const keys = fields.filter(key => !['name','energyOn','machineOn','profitMode'].includes(key));
+    const keys = fields.filter(key => !['name','notes','status','energyOn','machineOn','profitMode'].includes(key));
     if (keys.some(key => s[key] === '' || !Number.isFinite(n(key)) || n(key) < 0)) throw Error('Completa los campos numéricos con valores válidos, desde cero.');
     if (n('qty') < 1 || !Number.isInteger(n('qty'))) throw Error('La cantidad de piezas debe ser un número entero de al menos 1.');
     if (n('minutes') > 59 || !Number.isInteger(n('minutes'))) throw Error('Los minutos adicionales deben ser un entero entre 0 y 59.');
@@ -75,5 +75,52 @@
   document.getElementById('copy-result').addEventListener('click',async()=>{if(!result)return;try{await navigator.clipboard.writeText(el('summary').value);document.getElementById('action-status').textContent='Resumen copiado.';}catch{el('summary').select();document.getElementById('action-status').textContent='Seleccionado: copia el resumen con el menú de tu dispositivo.';}});
   document.getElementById('download-result').addEventListener('click',()=>{if(!result)return;const link=document.createElement('a');const url=URL.createObjectURL(new Blob([el('summary').value],{type:'text/plain;charset=utf-8'}));link.href=url;link.download='resumen-impresion-3d.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
   document.getElementById('print-result').addEventListener('click',()=>{if(result)window.print();});
+  const dbKey='sparkx-jobs-v1';
+  const dbStatus=document.getElementById('history-status');
+  let records=[],storageDamaged=false;
+  function validateRecords(items){
+    if(!Array.isArray(items)||items.length>5000)throw Error('El respaldo debe contener hasta 5.000 trabajos.');
+    return items.map(item=>{
+      if(!item||typeof item.id!=='string'||item.id.length>100||!item.state||typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt)))throw Error('El respaldo contiene un trabajo inválido.');
+      const state=Object.fromEntries(fields.map(key=>[key,item.state[key]??(['notes','status'].includes(key)?'':undefined)]));
+      if(typeof state.name!=='string'||state.name.length>100||typeof state.notes!=='string'||state.notes.length>500)throw Error('Nombre o notas inválidos.');
+      const calculated=calculate(state);
+      return{id:item.id,createdAt:item.createdAt,state,result:calculated};
+    });
+  }
+  try {const raw=localStorage.getItem(dbKey);if(raw)records=validateRecords(JSON.parse(raw));}
+  catch {storageDamaged=true;dbStatus.textContent='No se pudo leer la base guardada. No se sobrescribirá; restaura un respaldo válido.';}
+  const localDate=iso=>new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',dateStyle:'short',timeStyle:'short'}).format(new Date(iso));
+  function persist(next){localStorage.setItem(dbKey,JSON.stringify(next));records=next;renderHistory();}
+  function renderHistory(){
+    document.getElementById('history-count').textContent=records.length+' trabajo(s) guardado(s)';
+    const tbody=document.getElementById('history-rows');
+    tbody.replaceChildren(...records.slice().reverse().map(record=>{
+      const row=document.createElement('tr');
+      [localDate(record.createdAt),record.state.name,record.state.status||'Cotización',record.state.qty,money(record.result.cost),money(record.result.total)].forEach(value=>{const cell=document.createElement('td');cell.textContent=value;row.append(cell);});
+      const cell=document.createElement('td'),button=document.createElement('button');button.type='button';button.className='btn btn-small';button.textContent='Cargar';button.setAttribute('aria-label','Cargar '+record.state.name);button.addEventListener('click',()=>{restore({privateContent:{inputs:record.state,tariffVersion:3}});refresh(true);document.getElementById('action-status').textContent='Cargado '+record.state.name+'. Guardar creará un registro nuevo.';el('name').focus();});cell.append(button);row.append(cell);return row;
+    }));
+    document.getElementById('export-history').disabled=!records.length;
+  }
+  function currentRecord(){if(!result)throw Error('Revisa los datos antes de guardar o exportar.');const state=read();if(!state.name.trim())throw Error('Escribe un nombre para este trabajo.');return{id:typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2),createdAt:new Date().toISOString(),state,result:calculate(state)};}
+  function download(data,name,type){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  document.getElementById('save-job').addEventListener('click',()=>{
+    try {if(storageDamaged)throw Error('Restaura un respaldo antes de guardar para proteger la base existente.');if(records.length>=5000)throw Error('La base alcanzó 5.000 trabajos. Exporta un respaldo.');const record=currentRecord();const last=records[records.length-1];if(last&&JSON.stringify(last.state)===JSON.stringify(record.state)&&Date.now()-Date.parse(last.createdAt)<10000){dbStatus.textContent='Este trabajo ya se guardó; no se creó un duplicado.';return;}persist([...records,record]);dbStatus.textContent='Trabajo guardado: '+record.state.name+'.';}
+    catch(error){dbStatus.textContent=error.message+' Si el navegador está lleno, exporta tu historial.';}
+  });
+  const exportFields=[['qty','Piezas'],['grams','Piezas y soportes (g)'],['purge','Purga adicional (g)'],['spoolPrice','Bobina (CLP)'],['spoolWeight','Bobina (g)'],['watts','Consumo promedio (W)'],['kwh','Tarifa (CLP/kWh)'],['risk','Reserva fallas (%)'],['prep','Preparación (min)'],['finish','Terminación (min)'],['laborRate','Trabajo (CLP/h)'],['machinePrice','Impresora (CLP)'],['life','Recuperación (h)'],['maint','Mantenimiento (CLP/h)'],['other','Otros (CLP)'],['percent','Ganancia (%)'],['vat','IVA adicional (%)']];
+  function exportExcel(items,filename){
+    const headers=['ID','Fecha (Chile)','Trabajo','Estado','Notas','Horas impresión','Costo total (CLP)','Venta neta (CLP)','IVA (CLP)','Venta total (CLP)','Precio por pieza (CLP)','Ganancia (CLP)',...exportFields.map(x=>x[1]),'Electricidad incluida','Máquina incluida','Método ganancia','Material (CLP)','Purga (CLP)','Luz (CLP)','Recuperación (CLP)','Mantenimiento (CLP)','Reserva fallas (CLP)','Trabajo manual (CLP)'];
+    const rows=items.map(x=>[x.id,localDate(x.createdAt),x.state.name,x.state.status||'Cotización',x.state.notes,x.result.hours,x.result.cost,x.result.net,x.result.tax,x.result.total,x.result.unit,x.result.profit,...exportFields.map(([key])=>Number(x.state[key])),x.state.energyOn?'Sí':'No',x.state.machineOn?'Sí':'No',x.state.profitMode==='margin'?'Margen sobre venta':'Recargo sobre costo',...x.result.rows.slice(0,7).map(row=>row[1])]);
+    download(SparkxExcel.create(headers,rows),filename,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  }
+  document.getElementById('export-current').addEventListener('click',()=>{try{exportExcel([currentRecord()],'trabajo-3d.xlsx');document.getElementById('action-status').textContent='Excel del trabajo descargado. Para añadirlo a tu base, usa Guardar trabajo.';}catch(error){document.getElementById('action-status').textContent=error.message;}});
+  document.getElementById('export-history').addEventListener('click',()=>{try{if(records.length)exportExcel(records,'base-trabajos-3d.xlsx');dbStatus.textContent='Base exportada a Excel: '+records.length+' trabajo(s).';}catch(error){dbStatus.textContent=error.message;}});
+  document.getElementById('backup-history').addEventListener('click',()=>{download(JSON.stringify({version:1,records},null,2),'respaldo-taller-3d.json','application/json');dbStatus.textContent='Respaldo descargado. Puedes restaurarlo en otro navegador.';});
+  document.getElementById('restore-history').addEventListener('change',async event=>{
+    const file=event.target.files[0];if(!file)return;
+    try{if(file.size>15*1024*1024)throw Error('Respaldo demasiado grande (máximo 15 MB).');const data=JSON.parse(await file.text());if(data.version!==1)throw Error('Versión de respaldo no compatible.');const incoming=validateRecords(data.records);const merged=new Map(records.map(x=>[x.id,x]));for(const record of incoming)if(!merged.has(record.id))merged.set(record.id,record);if(merged.size>5000)throw Error('La base combinada supera 5.000 trabajos.');persist([...merged.values()].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)));storageDamaged=false;dbStatus.textContent='Respaldo restaurado. Los registros repetidos se conservaron una sola vez.';}catch(error){dbStatus.textContent='No se importó: '+error.message;}finally{event.target.value='';}
+  });
+  renderHistory();
   if('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();

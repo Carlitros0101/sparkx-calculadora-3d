@@ -34,3 +34,11 @@ En Settings → Pages, selecciona Deploy from a branch, la rama main y la carpet
 Sirve esta carpeta con cualquier servidor estático. Para comprobar los cálculos: `node --test tests/calculator.test.cjs`. No se necesita instalar paquetes.
 
 No se incluyen boletas ni datos personales en el repositorio.
+
+## Historial y Excel
+
+Guardar trabajo crea un registro independiente con fecha y valores. La base se guarda solo en localStorage de ese navegador y no se sincroniza entre dispositivos. Excel puede exportar un trabajo o toda la base como .xlsx real, con números tipados, filtro y encabezado congelado. Los importes históricos son valores, no fórmulas que cambien al modificar precios futuros.
+
+Descargar respaldo genera un archivo JSON. Restaurar respaldo valida sus registros y los combina por ID sin duplicados. Excel sirve para consulta y registro externo; la restauración en la app utiliza el respaldo JSON. Borrar datos del navegador elimina el historial local, por lo que conviene guardar respaldos periódicos.
+
+Diseño personal inspirado en el verde, negro y blanco de Creality; no es una app oficial. No utiliza librerías de Excel ni conexiones externas para exportar.
