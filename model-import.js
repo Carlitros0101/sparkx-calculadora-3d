@@ -16,7 +16,7 @@
  }
  const plain=s=>String(s).replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[*_`]/g,'').trim();
  function minutes(text){
-  const t=String(text).toLowerCase().trim();let total=0,found=false;
+  const t=String(text).toLowerCase().trim().replace(/([a-záí])(?=\d)/g,'$1 ');let total=0,found=false;
   const pattern=/(\d+(?:[.,]\d+)?)\s*(days?|días?|d|hours?|horas?|hrs?|h|minutes?|minutos?|mins?|min|m|seconds?|segundos?|secs?|s)\b/g;
   for(const m of t.matchAll(pattern)){found=true;const unit=m[2];total+=Number(m[1].replace(',','.'))*(/^(d|day|día)/.test(unit)?1440:/^(h|hour|hora)/.test(unit)?60:/^(s|sec|seg)/.test(unit)?1/60:1);}
   return found&&total>0&&total<525600?Math.ceil(total):null;
@@ -28,7 +28,7 @@
   let title=rawTitle.replace(/\s*[-|]\s*(?:Free 3D Print Model.*|MakerWorld.*|Download free STL.*|Printables\.com.*)$/i,'').trim();
   let author='';
   if(source.site==='Printables'){const m=title.match(/^(.*?)\s+(?:by|por)\s+(.+?)(?:\s*\|.*)?$/i);if(m){title=m[1];author=m[2];}}
-  if(source.site==='Thingiverse'){const m=title.match(/^(.*?)\s+by\s+([^|]+)$/i);if(m){title=m[1];author=m[2];}}
+  if(source.site==='Thingiverse'){const m=title.match(/^(.*)\s+by\s+([^|]+)$/i);if(m){title=m[1];author=m[2];}}
   const content=text.split('Markdown Content:')[1]||text;
   if(!title){
    const slug=new URL(source.url).pathname.replace(/\/(?:files|details|collections)\/?$/,'').split('/').filter(Boolean).pop().replace(/^\d+-/,'').replace(/-/g,' ');
