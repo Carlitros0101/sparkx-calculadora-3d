@@ -42,3 +42,7 @@ Guardar trabajo crea un registro independiente con fecha y valores. La base se g
 Descargar respaldo genera un archivo JSON. Restaurar respaldo valida sus registros y los combina por ID sin duplicados. Excel sirve para consulta y registro externo; la restauración en la app utiliza el respaldo JSON. Borrar datos del navegador elimina el historial local, por lo que conviene guardar respaldos periódicos.
 
 Diseño personal inspirado en el verde, negro y blanco de Creality; no es una app oficial. No utiliza librerías de Excel ni conexiones externas para exportar.
+
+## Importación de fichas públicas
+
+MakerWorld, Printables y Thingiverse: lectura mediante Jina Reader sin clave. Se envía únicamente la URL pública normalizada, sin parámetros de seguimiento ni credenciales. Nombre y autor se importan; tiempo/peso de perfiles requieren selección y aplicación explícitas, quedan marcados como referencia y se exportan con su origen a Excel. No se calcula tiempo ni peso desde STL. El ID de perfil del enlace se conserva pero no se presume su correspondencia con la lista leída. Si hay CAPTCHA, bloqueo, límite o campos ausentes, el usuario puede pegar texto público o ingresar sus valores de Creality Print. No hay garantía de lectura en todas las fichas ni de permanencia del servicio externo.

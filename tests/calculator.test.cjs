@@ -3,10 +3,10 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');const sc
 function setup(saved=null,db=null){
  const nodes={};const store={};if(saved)store['sparkx-cost-v1']=JSON.stringify(saved);if(db)store['sparkx-jobs-v1']=JSON.stringify(db);
  function node(){return{value:'',type:'',checked:false,textContent:'',events:{},children:[],addEventListener(k,f){this.events[k]=f;},append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},select(){},focus(){},setAttribute(){},click(){}};}
- for(const m of html.matchAll(/<(input|select|textarea|div|tbody|button|span|p)[^>]*id="([^"]+)"[^>]*>/g)){const n=node();n.value=m[0].match(/value="([^"]*)"/)?.[1]||'';n.type=m[0].match(/type="([^"]*)"/)?.[1]||'';n.checked=/\schecked/.test(m[0]);nodes[m[2]]=n;}
+ for(const m of html.matchAll(/<(input|select|textarea|div|tbody|button|span|p|strong|a)[^>]*id="([^"]+)"[^>]*>/g)){const n=node();n.value=m[0].match(/value="([^"]*)"/)?.[1]||'';n.type=m[0].match(/type="([^"]*)"/)?.[1]||'';n.checked=/\schecked/.test(m[0]);nodes[m[2]]=n;}
  nodes['sx-profitMode'].value='markup';
  nodes['sx-status'].value='Cotización';
- vm.runInNewContext(script,{Intl,Number,Object,Math,Error,Blob,URL,setTimeout,SparkxExcel:require('../excel.js'),document:{getElementById(id){assert(nodes[id],id);if(id==='sparkx-cost')return{querySelector(sel){assert(nodes[sel.slice(1)],sel);return nodes[sel.slice(1)];}};return nodes[id];},createElement:node},window:{isSecureContext:false,print(){}},navigator:{},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v}});
+ vm.runInNewContext(script,{Intl,Number,Object,Math,Error,Blob,URL,setTimeout,SparkxExcel:require('../excel.js'),SparkxModels:require('../model-import.js'),document:{getElementById(id){assert(nodes[id],id);if(id==='sparkx-cost')return{querySelector(sel){assert(nodes[sel.slice(1)],sel);return nodes[sel.slice(1)];}};return nodes[id];},createElement:node},window:{isSecureContext:false,print(){}},navigator:{},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v}});
  const get=k=>nodes['sx-'+k];const set=(k,v)=>{get(k).value=String(v);get(k).events.input();};
  return{nodes,get,set,store};
 }
@@ -21,3 +21,15 @@ test('longitud en metros no se interpreta como gramos',async()=>{const s=setup()
 test('historial conserva varios trabajos y evita doble clic',()=>{const s=setup();s.set('name','Llavero');s.set('grams',100);s.nodes['save-job'].events.click();s.nodes['save-job'].events.click();assert.equal(JSON.parse(s.store['sparkx-jobs-v1']).length,1);s.set('name','Soporte');s.set('grams',50);s.nodes['save-job'].events.click();const db=JSON.parse(s.store['sparkx-jobs-v1']);assert.equal(db.length,2);assert.equal(db[0].result.cost,1399);const next=setup(null,db);assert.equal(next.nodes['history-count'].textContent,'2 trabajo(s) guardado(s)');});
 test('respaldo se restaura sin duplicar los IDs',async()=>{const s=setup();s.set('name','Prueba');s.nodes['save-job'].events.click();const records=JSON.parse(s.store['sparkx-jobs-v1']);await s.nodes['restore-history'].events.change({target:{files:[{size:200,text:async()=>JSON.stringify({version:1,records})}],value:'file'}});assert.equal(JSON.parse(s.store['sparkx-jobs-v1']).length,1);});
 test('respaldo inválido no modifica la base',async()=>{const s=setup();s.nodes['save-job'].events.click();const old=s.store['sparkx-jobs-v1'];await s.nodes['restore-history'].events.change({target:{files:[{size:200,text:async()=>JSON.stringify({version:1,records:[{id:'bad'}]})}],value:'file'}});assert.equal(s.store['sparkx-jobs-v1'],old);assert(s.nodes['history-status'].textContent.includes('No se importó'));});
+test('importar ficha conserva números hasta aplicar referencia y guarda procedencia',()=>{
+ const s=setup();s.set('grams',42);s.set('hours',2);
+ s.nodes['model-link'].value='https://makerworld.com/es/models/3000181-hanging-monkey-banana-holder#profileId-3368322';
+ s.nodes['model-text'].value='Title: Hanging Monkey Banana Holder - Free 3D Print Model - MakerWorld\nMarkdown Content:\n[Alino3DWorld](https://makerworld.com/en/@StampAlino)\n#### Print Files (1)\n![Image 6: Perfil A](https://example.org/a.png)\nDesigner\n41 min\n1 plate\nOpen in Bambu Studio';
+ s.nodes['read-model-text'].events.click();assert.equal(s.get('name').value,'Hanging Monkey Banana Holder');assert.equal(s.get('grams').value,'42');assert.equal(s.get('hours').value,'2');assert(s.nodes['use-reference'].disabled);
+ s.nodes['model-profiles'].value='0';s.nodes['model-profiles'].events.change();s.nodes['use-reference'].events.click();assert.equal(s.get('minutes').value,41);assert.equal(s.get('grams').value,'42');assert(s.get('timeSource').value.startsWith('Referencia MakerWorld'));
+ s.nodes['save-job'].events.click();const r=JSON.parse(s.store['sparkx-jobs-v1'])[0];assert.equal(r.state.modelAuthor,'Alino3DWorld');assert.equal(r.state.modelProfile,'Perfil A');
+ s.set('minutes',30);assert.equal(s.get('timeSource').value,'Manual');
+});
+test('historial anterior sin datos de origen sigue cargando',()=>{
+ const s=setup();s.nodes['save-job'].events.click();const db=JSON.parse(s.store['sparkx-jobs-v1']);for(const k of ['modelUrl','modelAuthor','modelProfile','timeSource','weightSource'])delete db[0].state[k];const next=setup(null,db);assert.equal(next.nodes['history-count'].textContent,'1 trabajo(s) guardado(s)');
+});

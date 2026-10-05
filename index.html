@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111111"><meta name="description" content="Calcula materiales, electricidad, trabajo y precio de venta para tu impresión 3D."><title>Mi taller 3D · SPARKX i7</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><script src="excel.js" defer></script><script src="app.js" defer></script></head><body>
+<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111111"><meta name="description" content="Calcula materiales, electricidad, trabajo y precio de venta para tu impresión 3D."><title>Mi taller 3D · SPARKX i7</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><script src="excel.js" defer></script><script src="model-import.js" defer></script><script src="app.js" defer></script></head><body>
 <header><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M24 3 43 14v21L24 46 5 35V14Z M5 14l19 11 19-11 M24 25v21 M15 9l19 11v8"/></svg><div><span class="brand-label">CREALITY · SPARKX i7</span><strong>Mi taller 3D</strong><p>Calcula. Imprime. Guarda.</p></div></header><main><div id="sparkx-cost">
   <h2>Calcula tu próxima impresión</h2>
   <div class="text-muted">Creality SPARKX i7 Combo · Pesos chilenos</div>
@@ -9,7 +9,23 @@
     <div class="card viz-stat"><div>Precio por pieza</div><div class="viz-stat-value tabular-nums" id="sx-unit">$0</div><div class="text-small" id="sx-profit">Ganancia antes de IVA: $0</div></div>
   </div>
   <div id="sx-error" class="text-destructive" role="alert"></div>
-  <p class="note">Ingresa el tiempo y el material de todo el trabajo. Si el peso de Creality Print ya incluye purga y torre, deja la purga adicional en cero. Las piezas obtenidas permiten repartir el precio del lote.</p><h3>Trabajo completo</h3>
+  <p class="note">Ingresa el tiempo y el material de todo el trabajo. Si el peso de Creality Print ya incluye purga y torre, deja la purga adicional en cero. Las piezas obtenidas permiten repartir el precio del lote.</p><section class="model-import card" aria-labelledby="model-title">
+  <h3 id="model-title">Importar modelo desde un enlace</h3>
+  <p class="text-small">MakerWorld · Printables · Thingiverse. Importa el nombre, el autor y las referencias que publique la ficha.</p>
+  <label class="form-label">Enlace del modelo<input class="form-control" type="url" id="model-link" placeholder="https://makerworld.com/es/models/..." maxlength="2000"></label>
+  <div class="actions"><button type="button" class="btn" id="load-model">Leer enlace</button><a class="btn btn-outline" id="open-model" target="_blank" rel="noopener noreferrer" hidden>Abrir modelo</a></div>
+  <p class="text-small">Al pulsar Leer enlace se envía solo el enlace público al servicio Jina Reader. Los trabajos, notas y archivos permanecen en tu navegador.</p>
+  <p class="text-small" role="status" id="model-message">Los tiempos publicados corresponden al perfil del sitio. Para tu SPARKX, confirma tiempo y gramos en Creality Print.</p>
+  <div id="model-preview" hidden>
+    <strong id="model-name"></strong><p class="text-small" id="model-author"></p>
+    <label class="form-label">Perfil de referencia<select class="form-select" id="model-profiles"><option value="">Elige un perfil</option></select></label>
+    <p class="text-small" id="model-reference"></p>
+    <div class="actions"><button type="button" class="btn btn-outline" id="use-reference" disabled>Usar referencia en el cálculo</button></div>
+  </div>
+  <details><summary>Si la página bloquea la lectura: pegar su texto</summary><p class="text-small">Abre el enlace, copia el texto de la ficha (Ctrl+A y Ctrl+C) y pégalo aquí. Evita copiar comentarios o modelos relacionados.</p><label class="form-label">Texto público de la ficha<textarea class="form-control" id="model-text" rows="4" maxlength="100000"></textarea></label><button type="button" class="btn btn-outline" id="read-model-text">Leer texto pegado</button></details>
+  <input id="sx-modelUrl" type="hidden"><input id="sx-modelAuthor" type="hidden"><input id="sx-modelProfile" type="hidden"><input id="sx-timeSource" type="hidden" value="Manual"><input id="sx-weightSource" type="hidden" value="Manual">
+</section>
+<h3>Trabajo completo</h3>
   <div class="viz-controls">
     <label class="form-label">Nombre del trabajo<input class="form-control" id="sx-name" value="Mi primera impresión" maxlength="100"></label>
     <label class="form-label">Estado del trabajo<select class="form-select" id="sx-status"><option>Cotización</option><option>En impresión</option><option>Terminado</option></select></label><label class="form-label">Notas / cliente (opcional)<input class="form-control" id="sx-notes" maxlength="500" placeholder="Ej.: llavero azul, pedido de 10 unidades"></label><label class="form-label">Piezas obtenidas<input class="form-control" id="sx-qty" type="number" min="1" step="1" value="1"></label>
@@ -22,7 +38,7 @@
     <label class="form-label">Archivo de impresión<input class="form-control" type="file" accept=".gcode" id="sx-file"></label>
     <div class="text-small" id="sx-import" aria-live="polite">Solo datos explícitos del encabezado. El peso importado es total: incluye la purga si el archivo la contabiliza.</div>
   </details>
-  <h3>Tus filamentos</h3>
+  <p class="text-small" id="sx-data-origin"></p><h3>Tus filamentos</h3>
   <div class="text-small">Creality Hyper PLA · Blanco, negro, azul, verde y amarillo · Mismo precio por bobina</div>
   <div class="viz-controls">
     <label class="form-label">Precio por bobina ($)<input class="form-control" id="sx-spoolPrice" type="number" min="0" step="1" value="13990"></label>
@@ -70,4 +86,4 @@
 <label class="form-label">Restaurar respaldo (.json)<input class="form-control" id="restore-history" type="file" accept=".json,application/json"></label>
 <p id="history-status" role="status" class="text-small"></p>
 <div class="table-scroll"><table class="table history-table"><thead><tr><th>Fecha</th><th>Trabajo</th><th>Estado</th><th>Piezas</th><th>Costo</th><th>Venta total</th><th>Acción</th></tr></thead><tbody id="history-rows"></tbody></table></div>
-</section></main><footer>App personal inspirada en Creality. No es una aplicación oficial.<br>SPARKX i7 Combo · Hyper PLA · CLP<br>Los ajustes se guardan solo en este navegador. Sin cuentas, anuncios ni envío de tus archivos.<br>Tarifa editable de referencia: $249,56/kWh, con IVA. Consumo de 100 W y bobina de 1.000 g son supuestos por confirmar. La reserva por fallas es un recargo sobre material, electricidad y uso de máquina; no una probabilidad de falla.</footer></body></html>
+</section></main><footer>App personal inspirada en Creality. No es una aplicación oficial.<br>SPARKX i7 Combo · Hyper PLA · CLP<br>Los ajustes se guardan solo en este navegador. Sin cuentas ni anuncios. Los archivos y trabajos no se envían; Leer enlace consulta una ficha pública a través de Jina Reader.<br>Tarifa editable de referencia: $249,56/kWh, con IVA. Consumo de 100 W y bobina de 1.000 g son supuestos por confirmar. La reserva por fallas es un recargo sobre material, electricidad y uso de máquina; no una probabilidad de falla.</footer></body></html>
