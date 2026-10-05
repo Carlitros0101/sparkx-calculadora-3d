@@ -1,0 +1,19 @@
+const fs=require('node:fs');const vm=require('node:vm');const assert=require('node:assert/strict');const {test}=require('node:test');const path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');const script=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
+function setup(saved=null){
+ const nodes={};const store={};if(saved)store['sparkx-cost-v1']=JSON.stringify(saved);
+ function node(){return{value:'',type:'',checked:false,textContent:'',events:{},children:[],addEventListener(k,f){this.events[k]=f;},append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},select(){},click(){}};}
+ for(const m of html.matchAll(/<(input|select|textarea|div|tbody|button)[^>]*id="([^"]+)"[^>]*>/g)){const n=node();n.value=m[0].match(/value="([^"]*)"/)?.[1]||'';n.type=m[0].match(/type="([^"]*)"/)?.[1]||'';n.checked=/\schecked/.test(m[0]);nodes[m[2]]=n;}
+ nodes['sx-profitMode'].value='markup';
+ vm.runInNewContext(script,{Intl,Number,Object,Math,Error,Blob,URL,setTimeout,document:{getElementById(id){assert(nodes[id],id);if(id==='sparkx-cost')return{querySelector(sel){assert(nodes[sel.slice(1)],sel);return nodes[sel.slice(1)];}};return nodes[id];},createElement:node},window:{isSecureContext:false,print(){}},navigator:{},localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v}});
+ const get=k=>nodes['sx-'+k];const set=(k,v)=>{get(k).value=String(v);get(k).events.input();};
+ return{nodes,get,set,store};
+}
+test('tarifa corregida y electricidad activada: cinco horas cuestan 125 pesos',()=>{const s=setup();assert.equal(s.get('kwh').value,'249.56');assert(s.get('energyOn').checked);s.set('hours',5);assert.equal(s.get('cost').textContent,'$125');assert(s.get('summary').value.includes('Electricidad: $125'));});
+test('material, purga y precio repartido entre piezas',()=>{const s=setup();s.set('grams',100);s.set('purge',20);s.set('qty',2);assert.equal(s.get('cost').textContent,'$1.679');assert.equal(s.get('sale').textContent,'$2.182');assert.equal(s.get('unit').textContent,'$1.091');});
+test('margen sobre venta e IVA adicional',()=>{const s=setup();s.set('grams',100);s.set('profitMode','margin');s.set('percent',50);s.set('vat',19);assert.equal(s.get('sale').textContent,'$3.330');s.set('percent',100);assert(s.get('error').textContent.includes('menor'));assert.equal(s.get('sale').textContent,'—');});
+test('validación de cantidades, peso y números',()=>{const s=setup();s.set('qty',0);assert(s.get('error').textContent.includes('entero'));s.set('qty',1);s.set('spoolWeight',0);assert(s.get('error').textContent.includes('mayores'));s.set('spoolWeight',1000);s.set('grams','');assert(s.get('error').textContent.includes('válidos'));});
+test('trabajo manual, uso de máquina y recuperación',()=>{const s=setup();s.set('hours',2);s.get('machineOn').checked=true;s.set('prep',30);s.set('laborRate',6000);assert.equal(s.get('cost').textContent,'$3.317');});
+test('ajustes se conservan al abrir de nuevo',()=>{const s=setup();s.set('grams',120);s.set('kwh',300);const next=setup(JSON.parse(s.store['sparkx-cost-v1']));assert.equal(next.get('grams').value,'120');assert.equal(next.get('kwh').value,'300');});
+test('importación explícita de tiempo y peso total borra purga adicional',async()=>{const s=setup();s.set('purge',10);s.get('file').files=[{size:90,text:async()=>';TIME:7200\n;filament used [g] = 10.5, 20.5\n'}];await s.get('file').events.change();assert.equal(s.get('hours').value,2);assert.equal(s.get('grams').value,'31.00');assert.equal(s.get('purge').value,0);});
+test('longitud en metros no se interpreta como gramos',async()=>{const s=setup();s.set('grams',42);s.get('file').files=[{size:40,text:async()=>';Filament used: 3.2m\n'}];await s.get('file').events.change();assert.equal(s.get('grams').value,'42');assert(s.get('import').textContent.includes('no reconocido'));});

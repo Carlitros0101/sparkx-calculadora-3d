@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#172e39"><meta name="description" content="Calcula materiales, electricidad, trabajo y precio de venta para tu impresión 3D."><title>Mi taller 3D · SPARKX i7</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><script src="app.js" defer></script></head><body>
+<header><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M24 3 43 14v21L24 46 5 35V14Z M5 14l19 11 19-11 M24 25v21 M15 9l19 11v8"/></svg><div><strong>Mi taller 3D</strong><p>De tu primera pieza a tu próximo proyecto</p></div></header><main><div id="sparkx-cost">
+  <h2>Calcula tu próxima impresión</h2>
+  <div class="text-muted">Creality SPARKX i7 Combo · Pesos chilenos</div>
+  <div class="viz-grid" aria-live="polite" style="margin-top:16px">
+    <div class="card viz-stat"><div>Costo del trabajo</div><div class="viz-stat-value tabular-nums" id="sx-cost">$0</div><div class="text-small">Materiales y gastos incluidos</div></div>
+    <div class="card viz-stat"><div>Precio de venta</div><div class="viz-stat-value tabular-nums" id="sx-sale">$0</div><div class="text-small" id="sx-sale-label">Total del trabajo</div></div>
+    <div class="card viz-stat"><div>Precio por pieza</div><div class="viz-stat-value tabular-nums" id="sx-unit">$0</div><div class="text-small" id="sx-profit">Ganancia antes de IVA: $0</div></div>
+  </div>
+  <div id="sx-error" class="text-destructive" role="alert"></div>
+  <p class="note">Ingresa el tiempo y el material de todo el trabajo. Si el peso de Creality Print ya incluye purga y torre, deja la purga adicional en cero. Las piezas obtenidas permiten repartir el precio del lote.</p><h3>Trabajo completo</h3>
+  <div class="viz-controls">
+    <label class="form-label">Nombre del trabajo<input class="form-control" id="sx-name" value="Mi primera impresión" maxlength="100"></label>
+    <label class="form-label">Piezas obtenidas<input class="form-control" id="sx-qty" type="number" min="1" step="1" value="1"></label>
+    <label class="form-label">Horas de impresión<input class="form-control" id="sx-hours" type="number" min="0" step="1" value="0"></label>
+    <label class="form-label">Minutos adicionales<input class="form-control" id="sx-minutes" type="number" min="0" max="59" step="1" value="0"></label>
+    <label class="form-label">Filamento: piezas y soportes (g)<input class="form-control" id="sx-grams" type="number" min="0" step="0.1" value="0"></label>
+    <label class="form-label">Purga y torre multicolor adicionales (g)<input class="form-control" id="sx-purge" type="number" min="0" step="0.1" value="0"></label>
+  </div>
+  <details style="margin-top:12px"><summary class="cursor-interaction">Importar tiempo y peso desde G-code</summary>
+    <label class="form-label">Archivo de impresión<input class="form-control" type="file" accept=".gcode" id="sx-file"></label>
+    <div class="text-small" id="sx-import" aria-live="polite">Solo datos explícitos del encabezado. El peso importado es total: incluye la purga si el archivo la contabiliza.</div>
+  </details>
+  <h3>Tus filamentos</h3>
+  <div class="text-small">Creality Hyper PLA · Blanco, negro, azul, verde y amarillo · Mismo precio por bobina</div>
+  <div class="viz-controls">
+    <label class="form-label">Precio por bobina ($)<input class="form-control" id="sx-spoolPrice" type="number" min="0" step="1" value="13990"></label>
+    <label class="form-label">Peso neto por bobina (g) · confirmar<input class="form-control" id="sx-spoolWeight" type="number" min="1" step="1" value="1000"></label>
+    <label class="form-label">Reserva por fallas (% sobre impresión)<input class="form-control" id="sx-risk" type="number" min="0" step="1" value="0"></label>
+  </div>
+    <h3>Tu costo de electricidad</h3>
+    <div class="text-small">CGE · Tarifa de referencia · septiembre 2026 · Consumo, transporte y fondo de estabilización · Con IVA · Sin cargos fijos, intereses ni subsidio</div>
+    <label class="form-check"><input class="form-check-input" id="sx-energyOn" type="checkbox" checked><span class="form-check-label">Incluir electricidad</span></label>
+    <div class="viz-controls">
+      <label class="form-label">Consumo promedio (W) · estimación editable<input class="form-control" id="sx-watts" type="number" min="0" value="100"></label>
+      <label class="form-label">Tarifa de tu cuenta ($/kWh)<input class="form-control" id="sx-kwh" type="number" min="0" step="0.01" value="249.56"></label>
+    </div>
+    <div class="text-small tabular-nums" id="sx-energy-detail" aria-live="polite"></div>
+  <details style="margin-top:16px"><summary class="cursor-interaction">Tiempo de trabajo y desgaste de la impresora</summary>
+    <h3>Tu tiempo de trabajo</h3>
+    <div class="viz-controls">
+      <label class="form-label">Preparación y diseño (min)<input class="form-control" id="sx-prep" type="number" min="0" value="0"></label>
+      <label class="form-label">Terminaciones y embalaje (min)<input class="form-control" id="sx-finish" type="number" min="0" value="0"></label>
+      <label class="form-label">Valor de tu hora ($)<input class="form-control" id="sx-laborRate" type="number" min="0" value="0"></label>
+    </div>
+    <h3>Uso de tu impresora</h3>
+    <label class="form-check"><input class="form-check-input" id="sx-machineOn" type="checkbox"><span class="form-check-label">Incluir recuperación de inversión y mantenimiento</span></label>
+    <div class="viz-controls">
+      <label class="form-label">Compra de la impresora ($)<input class="form-control" id="sx-machinePrice" type="number" min="0" value="399990"></label>
+      <label class="form-label">Horas de uso para recuperar compra · supuesto<input class="form-control" id="sx-life" type="number" min="1" value="3000"></label>
+      <label class="form-label">Reserva mantenimiento ($ por hora de impresión)<input class="form-control" id="sx-maint" type="number" min="0" value="0"></label>
+    </div>
+  </details>
+  <h3>Venta</h3>
+  <div class="viz-controls">
+    <label class="form-label">Otros gastos por trabajo ($)<input class="form-control" id="sx-other" type="number" min="0" value="0"></label>
+    <label class="form-label">Cómo calcular tu ganancia<select class="form-select" id="sx-profitMode"><option value="markup">Recargo sobre el costo</option><option value="margin">Margen sobre el precio de venta</option></select></label>
+    <label class="form-label">Ganancia (%) · editable<input class="form-control" id="sx-percent" type="number" min="0" value="30"></label>
+    <label class="form-label">IVA adicional (%) · opcional<input class="form-control" id="sx-vat" type="number" min="0" max="100" value="0"></label>
+  </div>
+  <h3>Desglose del trabajo</h3>
+  <table class="table table-sm"><thead><tr><th>Concepto</th><th class="text-end">CLP</th></tr></thead><tbody id="sx-breakdown"></tbody></table>
+  <div class="actions"><button type="button" class="btn btn-primary" id="copy-result">Copiar resumen</button><button type="button" class="btn" id="download-result">Guardar resumen</button><button type="button" class="btn" id="print-result">Imprimir / PDF</button></div><div id="action-status" role="status" class="text-small"></div><label class="form-label">Resumen para copiar<textarea class="form-control" id="sx-summary" rows="9" readonly></textarea></label>
+</div>
+</main><footer>SPARKX i7 Combo · Hyper PLA · CLP<br>Los ajustes se guardan solo en este navegador. Sin cuentas, anuncios ni envío de tus archivos.<br>Tarifa editable de referencia: $249,56/kWh, con IVA. Consumo de 100 W y bobina de 1.000 g son supuestos por confirmar. La reserva por fallas es un recargo sobre material, electricidad y uso de máquina; no una probabilidad de falla.</footer></body></html>

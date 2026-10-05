@@ -1,2 +1,36 @@
-# sparkx-calculadora-3d
-Calculadora de costos de impresión 3D para Creality SPARKX i7, en pesos chilenos.
+# Mi taller 3D
+
+Calculadora personal para Creality SPARKX i7 Combo, en pesos chilenos. App estática, sin servidor, cuentas ni dependencias externas. Los archivos G-code se leen en el dispositivo y los ajustes se guardan en el navegador.
+
+## Uso
+
+Ingresa tiempo y material del trabajo completo, cantidad de piezas obtenidas y purga adicional. Si el laminador ya incluye la purga y la torre en el peso total, no las vuelvas a sumar. El precio por pieza es el precio del lote dividido por las piezas obtenidas.
+
+Incluye filamento, electricidad, preparación y terminaciones, recuperación del valor de impresora, mantenimiento, otros gastos, reserva por fallas, ganancia e IVA opcional. Puedes copiar, guardar o imprimir el resumen. La app puede funcionar sin conexión tras una primera visita en HTTPS.
+
+## Valores iniciales
+
+- Impresora: $399.990.
+- Hyper PLA blanco, negro, azul, verde y amarillo: $13.990 por bobina; peso supuesto de 1.000 g, por confirmar.
+- Electricidad: $249,56/kWh con IVA, tarifa de referencia de septiembre de 2026. Incluye consumo, transporte y fondo de estabilización. Excluye administración, arriendo de medidor, intereses, ajustes de pago y subsidios.
+- Consumo promedio: 100 W, estimación editable; no es una medición ni la potencia nominal del equipo.
+- Recuperación de compra: 3.000 horas, supuesto editable; desactivada por defecto.
+- Recargo sobre costo: 30 %, editable; no es una recomendación comercial.
+
+## Cálculos
+
+Electricidad = horas × W / 1.000 × CLP/kWh. Material = gramos × precio de bobina / peso neto. La reserva por fallas se aplica al material, purga, electricidad y uso de máquina; no a trabajo manual u otros gastos. No representa una probabilidad estadística.
+
+Recargo: precio neto = costo × (1 + porcentaje). Margen sobre venta: precio neto = costo / (1 - porcentaje), con porcentaje menor que 100 %. IVA opcional se agrega al precio neto. Los costos son desembolsos brutos; no se realiza tratamiento de crédito fiscal. Los resultados se calculan sin redondear y se muestran en pesos enteros.
+
+Importación de G-code: reconoce encabezados explícitos de tiempo y gramos. No convierte metros en gramos ni interpreta archivos 3MF o G-code binario. Si un encabezado no se reconoce, ingresa el dato manualmente y verifica el resultado contra el laminador.
+
+## GitHub Pages
+
+En Settings → Pages, selecciona Deploy from a branch, la rama main y la carpeta / (root). Todos los archivos se sirven desde rutas relativas, compatibles con un repositorio de GitHub Pages.
+
+## Desarrollo
+
+Sirve esta carpeta con cualquier servidor estático. Para comprobar los cálculos: `node --test tests/calculator.test.cjs`. No se necesita instalar paquetes.
+
+No se incluyen boletas ni datos personales en el repositorio.
