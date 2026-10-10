@@ -2,8 +2,9 @@
 (() => {
   const root = document.getElementById('sparkx-cost');
   const el = key => root.querySelector('#sx-' + key);
-  const fields = ['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat'];
-  const textFields=['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','energyOn','machineOn','profitMode'];
+  const quoteFields=['business','contact','client','quoteNumber','quoteDate','validity','delivery','quoteCosts'];
+  const fields = ['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat',...quoteFields];
+  const textFields=['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','energyOn','machineOn','profitMode',...quoteFields];
   const money = value => new Intl.NumberFormat('es-CL', {style:'currency',currency:'CLP',maximumFractionDigits:0}).format(value);
   let result = null;
   function read() { return Object.fromEntries(fields.map(key => [key, el(key).type === 'checkbox' ? el(key).checked : el(key).value])); }
@@ -41,8 +42,11 @@
       el('sale-label').textContent=Number(state.vat) ? 'Total con IVA adicional' : 'Total sin IVA adicional';
       el('breakdown').replaceChildren(...result.rows.map(([label,value]) => { const row=document.createElement('tr'); const a=document.createElement('td'); const b=document.createElement('td'); a.textContent=label; b.textContent=money(value); b.className='text-end tabular-nums'; row.append(a,b); return row; }));
       el('summary').value=[state.name || 'Impresión 3D','SPARKX i7 · '+state.qty+' pieza(s)', 'Tiempo del trabajo: '+state.hours+' h '+state.minutes+' min', 'Filamento: '+state.grams+' g + '+state.purge+' g de purga adicional', 'Electricidad: '+money(result.rows[2][1])+(state.energyOn ? ' ('+state.watts+' W; '+state.kwh+' CLP/kWh)' : ' (excluida)'), 'Costo total: '+money(result.cost), 'Venta antes de IVA: '+money(result.net), 'IVA adicional: '+money(result.tax), 'Precio total: '+money(result.total)+' · Por pieza: '+money(result.unit),...(state.modelUrl?['Modelo: '+state.modelUrl,'Autor: '+(state.modelAuthor||'No reconocido')]:[]),'Origen del tiempo: '+(state.timeSource||'Manual'),'Origen del peso: '+(state.weightSource||'Manual')].join('\n');
+      renderQuote(state,result);
     } catch(error) {
       result=null; el('error').textContent=error.message; el('energy-detail').textContent='';
+      document.getElementById('quote-sheet').setAttribute('data-invalid','true');
+      document.getElementById('quote-status').textContent='Revisa los datos del cálculo antes de generar una cotización.';
       ['cost','sale','unit'].forEach(key=>el(key).textContent='—'); el('profit').textContent='Revisa los valores'; el('breakdown').replaceChildren(); el('summary').value='';
     }
     if (save) {try {localStorage.setItem('sparkx-cost-v1', JSON.stringify({privateContent:{inputs:state,tariffVersion:3}}));} catch {document.getElementById('action-status').textContent='Tu navegador no permite guardar ajustes. Puedes seguir calculando.';}}
@@ -113,7 +117,33 @@
   restore(saved);
   document.getElementById('copy-result').addEventListener('click',async()=>{if(!result)return;try{await navigator.clipboard.writeText(el('summary').value);document.getElementById('action-status').textContent='Resumen copiado.';}catch{el('summary').select();document.getElementById('action-status').textContent='Seleccionado: copia el resumen con el menú de tu dispositivo.';}});
   document.getElementById('download-result').addEventListener('click',()=>{if(!result)return;const link=document.createElement('a');const url=URL.createObjectURL(new Blob([el('summary').value],{type:'text/plain;charset=utf-8'}));link.href=url;link.download='resumen-impresion-3d.txt';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-  document.getElementById('print-result').addEventListener('click',()=>{if(result)window.print();});
+  function prepareQuote(){
+    if(!result)return false;
+    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+    if(!el('quoteNumber').value.trim())el('quoteNumber').value='COT-'+parts.year+parts.month+parts.day+'-'+parts.hour+parts.minute+parts.second;
+    if(!el('quoteDate').value)el('quoteDate').value=parts.year+'-'+parts.month+'-'+parts.day;
+    refresh(true);return !!result;
+  }
+  function renderQuote(s,r){
+    const q=id=>document.getElementById('quote-'+id),text=(id,value)=>q(id).textContent=value;
+    document.getElementById('quote-sheet').setAttribute('data-invalid','false');
+    text('business',s.business.trim()||'Mi taller 3D');text('contact',s.contact);text('number',s.quoteNumber||'Se asignará al imprimir');
+    const rawDate=s.quoteDate||new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const date=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.split('-').reverse().join('/'):rawDate;
+    text('date',date);text('client',s.client.trim()||'Por completar');text('validity',s.validity||'Por acordar');text('delivery',s.delivery||'Por acordar');
+    text('job',s.name||'Impresión 3D');text('qty',s.qty);text('unit',new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:2,maximumFractionDigits:2}).format(r.net/Number(s.qty)));text('line',money(r.net));
+    text('net',money(r.net));text('tax',money(r.tax));text('tax-label','IVA adicional ('+s.vat+' %)');text('total',money(r.total));text('unit-total',money(r.unit));
+    text('time',s.hours+' h '+s.minutes+' min');text('material',s.grams+' g + '+s.purge+' g de purga adicional');
+    text('notes',s.notes||'Sin observaciones adicionales.');text('origin',s.timeSource===s.weightSource?(s.timeSource||'Manual'):'Tiempo: '+(s.timeSource||'Manual')+' · Peso: '+(s.weightSource||'Manual'));
+    text('model',s.modelUrl||'');q('model').hidden=!s.modelUrl;
+    q('costs').hidden=!s.quoteCosts;
+    q('breakdown').replaceChildren(...r.rows.slice(0,10).map(([label,value])=>{const row=document.createElement('tr');for(const x of [label,money(value)]){const c=document.createElement('td');c.textContent=x;row.append(c);}return row;}));
+    text('assumptions','Bobina: '+money(Number(s.spoolPrice))+' / '+s.spoolWeight+' g · Electricidad: '+(s.energyOn?s.watts+' W × '+s.kwh+' CLP/kWh':'excluida')+' · Ganancia: '+s.percent+' % ('+(s.profitMode==='margin'?'margen sobre venta':'recargo sobre costo')+').');
+    text('estimate-note',/Estimación/.test((s.timeSource||'')+(s.weightSource||''))?'Material y tiempo aproximados. Confirmar al laminar en Creality Print antes de aceptar la cotización.':'Confirmar que el material y tiempo corresponden a la configuración final de Creality Print.');
+  }
+  document.getElementById('preview-quote').addEventListener('click',()=>{if(prepareQuote()){document.getElementById('quote-sheet').hidden=false;document.getElementById('quote-status').textContent='Vista previa actualizada. Usa Imprimir / PDF para imprimir o guardar como PDF.';}});
+  document.getElementById('print-result').addEventListener('click',()=>{if(prepareQuote())window.print();});
+  window.addEventListener?.('beforeprint',()=>{if(result)renderQuote(read(),result);});
   const dbKey='sparkx-jobs-v1';
   const dbStatus=document.getElementById('history-status');
   let records=[],storageDamaged=false;

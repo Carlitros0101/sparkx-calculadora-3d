@@ -56,3 +56,7 @@ Sin resultados de laminado, se estima: volumen de paredes/tapas ≈ área superf
 Máximo 100 MB y un millón de triángulos. 3MF necesita un navegador con DecompressionStream deflate-raw (Chrome/Edge actuales). Archivos cifrados, ZIP64, XML con entidades y modelos incompletos no son compatibles.
 
 Pruebas: node --test tests/*.test.cjs.
+
+## Cotizaciones para imprimir
+
+Imprimir cotización / PDF genera un documento A4 con taller, contacto, cliente, número, fecha, validez, entrega, servicio, cantidad, precio neto unitario, subtotal, IVA opcional, total y precio final por pieza. Incluye material, tiempo, procedencia y observaciones. El desglose de costos y ganancia se puede ocultar al enviar al cliente. Ver cotización muestra el documento antes de imprimir. Número y fecha se asignan al preparar la cotización si están vacíos; son editables y se conservan con cada trabajo. El historial previo sigue siendo compatible.

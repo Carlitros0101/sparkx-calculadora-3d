@@ -95,9 +95,21 @@
     <label class="form-label">Ganancia (%) · editable<input class="form-control" id="sx-percent" type="number" min="0" value="30"></label>
     <label class="form-label">IVA adicional (%) · opcional<input class="form-control" id="sx-vat" type="number" min="0" max="100" value="0"></label>
   </div>
-  <h3>Desglose del trabajo</h3>
+  <details class="quote-settings"><summary>Datos de la cotización para imprimir</summary>
+<div class="viz-controls">
+<label class="form-label">Nombre de tu taller<input class="form-control" id="sx-business" value="Mi taller 3D" maxlength="100"></label>
+<label class="form-label">Contacto del taller<input class="form-control" id="sx-contact" placeholder="Teléfono, correo o dirección" maxlength="200"></label>
+<label class="form-label">Cliente<input class="form-control" id="sx-client" placeholder="Nombre del cliente" maxlength="150"></label>
+<label class="form-label">Número de cotización<input class="form-control" id="sx-quoteNumber" placeholder="Se asigna automáticamente al imprimir" maxlength="60"></label>
+<label class="form-label">Fecha<input class="form-control" type="date" id="sx-quoteDate"></label>
+<label class="form-label">Validez de la cotización<input class="form-control" id="sx-validity" value="7 días desde la fecha de emisión" maxlength="150"></label>
+<label class="form-label">Plazo y condiciones de entrega<input class="form-control" id="sx-delivery" placeholder="Por acordar con el cliente" maxlength="300"></label>
+</div><label class="form-check"><input class="form-check-input" type="checkbox" id="sx-quoteCosts" checked><span>Incluir el desglose de costos y ganancia en el reporte</span></label>
+<p class="text-small">Si vas a enviar la cotización a un cliente, puedes desmarcar el desglose. Las notas del trabajo se incluyen como observaciones.</p>
+</details>
+<h3>Desglose del trabajo</h3>
   <table class="table table-sm"><thead><tr><th>Concepto</th><th class="text-end">CLP</th></tr></thead><tbody id="sx-breakdown"></tbody></table>
-  <div class="actions"><button type="button" class="btn btn-primary" id="save-job">Guardar trabajo en mi base</button><button type="button" class="btn" id="export-current">Exportar trabajo a Excel</button><button type="button" class="btn" id="copy-result">Copiar resumen</button><button type="button" class="btn" id="download-result">Guardar resumen</button><button type="button" class="btn" id="print-result">Imprimir / PDF</button></div><div id="action-status" role="status" class="text-small"></div><label class="form-label">Resumen para copiar<textarea class="form-control" id="sx-summary" rows="9" readonly></textarea></label>
+  <div class="actions"><button type="button" class="btn btn-primary" id="save-job">Guardar trabajo en mi base</button><button type="button" class="btn" id="export-current">Exportar trabajo a Excel</button><button type="button" class="btn" id="copy-result">Copiar resumen</button><button type="button" class="btn" id="download-result">Guardar resumen</button><button type="button" class="btn" id="print-result">Imprimir cotización / PDF</button></div><button type="button" class="btn" id="preview-quote">Ver cotización</button><p id="quote-status" class="text-small" role="status"></p><div id="action-status" role="status" class="text-small"></div><label class="form-label">Resumen para copiar<textarea class="form-control" id="sx-summary" rows="9" readonly></textarea></label>
 </div>
 <section class="history" aria-labelledby="history-title">
 <div class="history-heading"><div><span class="brand-label">TU BASE DE IMPRESIONES</span><h3 id="history-title">Historial de trabajos</h3></div><span class="count" id="history-count">0 trabajo(s) guardado(s)</span></div>
@@ -106,4 +118,13 @@
 <label class="form-label">Restaurar respaldo (.json)<input class="form-control" id="restore-history" type="file" accept=".json,application/json"></label>
 <p id="history-status" role="status" class="text-small"></p>
 <div class="table-scroll"><table class="table history-table"><thead><tr><th>Fecha</th><th>Trabajo</th><th>Estado</th><th>Piezas</th><th>Costo</th><th>Venta total</th><th>Acción</th></tr></thead><tbody id="history-rows"></tbody></table></div>
-</section></main><footer>App personal inspirada en Creality. No es una aplicación oficial.<br>SPARKX i7 Combo · Hyper PLA · CLP<br>Los ajustes se guardan solo en este navegador. Sin cuentas ni anuncios. Los archivos y trabajos no se envían; Leer enlace consulta una ficha pública a través de Jina Reader.<br>Tarifa editable de referencia: $249,56/kWh, con IVA. Consumo de 100 W y bobina de 1.000 g son supuestos por confirmar. La reserva por fallas es un recargo sobre material, electricidad y uso de máquina; no una probabilidad de falla.</footer></body></html>
+</section></main><article id="quote-sheet" class="quote-sheet" hidden aria-labelledby="quote-title">
+<div class="quote-heading"><div><span class="quote-kicker">IMPRESIÓN 3D</span><h2 id="quote-business"></h2><p id="quote-contact"></p></div><div class="quote-ident"><h1 id="quote-title">COTIZACIÓN</h1><strong id="quote-number"></strong><p>Fecha: <span id="quote-date"></span></p></div></div>
+<div class="quote-meta"><div><span>Preparada para</span><strong id="quote-client"></strong></div><div><span>Validez</span><strong id="quote-validity"></strong></div><div><span>Entrega</span><strong id="quote-delivery"></strong></div></div>
+<h3>Detalle del servicio</h3><table class="quote-table"><thead><tr><th>Descripción</th><th>Cantidad</th><th>Precio unitario neto</th><th>Subtotal neto</th></tr></thead><tbody><tr><td id="quote-job"></td><td id="quote-qty"></td><td id="quote-unit"></td><td id="quote-line"></td></tr></tbody></table>
+<div class="quote-totals"><div><span>Subtotal neto</span><strong id="quote-net"></strong></div><div><span id="quote-tax-label"></span><strong id="quote-tax"></strong></div><div class="quote-grand"><span>TOTAL CLP</span><strong id="quote-total"></strong></div><p>Precio final por pieza: <strong id="quote-unit-total"></strong></p></div>
+<h3>Datos de impresión</h3><div class="quote-tech"><p><strong>Impresora</strong><br>Creality SPARKX i7 Combo</p><p><strong>Tiempo del trabajo</strong><br><span id="quote-time"></span></p><p><strong>Filamento total del trabajo</strong><br><span id="quote-material"></span></p></div>
+<p id="quote-origin" class="quote-small"></p><p id="quote-model" class="quote-small" hidden></p><p id="quote-estimate-note" class="quote-small"></p>
+<section id="quote-costs"><h3>Desglose del cálculo</h3><table class="quote-table quote-cost-table"><thead><tr><th>Concepto</th><th>Importe CLP</th></tr></thead><tbody id="quote-breakdown"></tbody></table><p id="quote-assumptions" class="quote-small"></p></section>
+<h3>Observaciones</h3><p id="quote-notes" class="quote-notes"></p><div class="quote-footer">Cotización de servicio de impresión 3D · Moneda: pesos chilenos (CLP)<br>Precios unitarios netos con dos decimales; totales redondeados a pesos. Los cálculos conservan sus decimales. Este documento no es una boleta ni una factura.</div>
+</article><footer>App personal inspirada en Creality. No es una aplicación oficial.<br>SPARKX i7 Combo · Hyper PLA · CLP<br>Los ajustes se guardan solo en este navegador. Sin cuentas ni anuncios. Los archivos y trabajos no se envían; Leer enlace consulta una ficha pública a través de Jina Reader.<br>Tarifa editable de referencia: $249,56/kWh, con IVA. Consumo de 100 W y bobina de 1.000 g son supuestos por confirmar. La reserva por fallas es un recargo sobre material, electricidad y uso de máquina; no una probabilidad de falla.</footer></body></html>
