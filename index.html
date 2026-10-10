@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111111"><meta name="description" content="Calcula materiales, electricidad, trabajo y precio de venta para tu impresión 3D."><title>Mi taller 3D · SPARKX i7</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><script src="excel.js" defer></script><script src="model-import.js" defer></script><script src="app.js" defer></script></head><body>
+<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111111"><meta name="description" content="Calcula materiales, electricidad, trabajo y precio de venta para tu impresión 3D."><title>Mi taller 3D · SPARKX i7</title><link rel="stylesheet" href="styles.css"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><script src="excel.js" defer></script><script src="model-import.js" defer></script><script src="file-import.js" defer></script><script src="app.js" defer></script></head><body>
 <header><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M24 3 43 14v21L24 46 5 35V14Z M5 14l19 11 19-11 M24 25v21 M15 9l19 11v8"/></svg><div><span class="brand-label">CREALITY · SPARKX i7</span><strong>Mi taller 3D</strong><p>Calcula. Imprime. Guarda.</p></div></header><main><div id="sparkx-cost">
   <h2>Calcula tu próxima impresión</h2>
   <div class="text-muted">Creality SPARKX i7 Combo · Pesos chilenos</div>
@@ -25,6 +25,26 @@
   <details><summary>Si la página bloquea la lectura: pegar su texto</summary><p class="text-small">Abre el enlace, copia el texto de la ficha (Ctrl+A y Ctrl+C) y pégalo aquí. Evita copiar comentarios o modelos relacionados.</p><label class="form-label">Texto público de la ficha<textarea class="form-control" id="model-text" rows="4" maxlength="100000"></textarea></label><button type="button" class="btn btn-outline" id="read-model-text">Leer texto pegado</button></details>
   <input id="sx-modelUrl" type="hidden"><input id="sx-modelAuthor" type="hidden"><input id="sx-modelProfile" type="hidden"><input id="sx-timeSource" type="hidden" value="Manual"><input id="sx-weightSource" type="hidden" value="Manual">
 </section>
+<section class="card file-import" aria-labelledby="file-title">
+<h3 id="file-title">Calcula desde tu archivo 3D</h3>
+<p>Sube un STL o 3MF para calcular material, tiempo estimado, costo y precio de venta. El archivo se procesa en tu dispositivo.</p>
+<label class="form-label">Archivo STL o 3MF (máximo 100 MB)<input class="form-control" id="file-upload" type="file" accept=".stl,.3mf"></label>
+<p id="file-message" role="status">STL y 3MF sin laminar: estimación aproximada. 3MF con resultados del laminador: tiempo y gramos guardados por placa.</p>
+<div id="file-settings" hidden>
+<label class="form-label">Cómo calcular<select id="file-mode" class="form-select"></select></label>
+<details open><summary>Ajustes para estimar desde el modelo</summary>
+<p class="note">Estos valores son supuestos editables, no un perfil calibrado de la SPARKX. En Creality Print, compara los gramos y el tiempo y ajusta el flujo efectivo. Los soportes se agregan como porcentaje; la purga se ingresa en el cálculo principal.</p>
+<div class="viz-controls">
+<label class="form-label">Material / densidad (g/cm³)<input id="file-density" class="form-control" type="number" value="1.24" min="0.1" step="0.01"></label>
+<label class="form-label">Relleno (%)<input id="file-infill" class="form-control" type="number" value="15" min="0" max="100"></label>
+<label class="form-label">Espesor aproximado de paredes y tapas (mm)<input id="file-wall" class="form-control" type="number" value="0.8" min="0" step="0.1"></label>
+<label class="form-label">Flujo efectivo promedio (mm³/s)<input id="file-flow" class="form-control" type="number" value="5" min="0.1" step="0.1"></label>
+<label class="form-label">Tiempo adicional por movimientos (%)<input id="file-overhead" class="form-control" type="number" value="30" min="0"></label>
+<label class="form-label">Material adicional de soportes (%)<input id="file-support" class="form-control" type="number" value="0" min="0"></label>
+<label class="form-label">Escala del modelo (1 = original)<input id="file-scale" class="form-control" type="number" value="1" min="0.001" max="100" step="0.01"></label>
+</div><p class="text-small">STL se interpreta en milímetros. La estimación de tiempo incluye 5 minutos de preparación de máquina. No simula capas, aceleraciones, cambios de color ni refrigeración.</p>
+</details><button id="file-apply" type="button" class="btn btn-primary" disabled>Recalcular con estos ajustes</button>
+</div></section>
 <h3>Trabajo completo</h3>
   <div class="viz-controls">
     <label class="form-label">Nombre del trabajo<input class="form-control" id="sx-name" value="Mi primera impresión" maxlength="100"></label>

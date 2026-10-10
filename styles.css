@@ -4,3 +4,5 @@
 @media print{header,footer,details,.viz-controls,.form-check,.note,.actions,.history,#sx-file,#sx-import,#action-status{display:none}body{background:#fff}main{margin:0;padding:0}.card,.card:nth-child(2){background:#fff;color:#000}.card:nth-child(2) .text-small{color:#333}h3{margin-top:16px}textarea{border:0}.table td,.table th{padding:6px}#sx-summary{min-height:220px}}
 
 .model-import{margin:24px 0;padding:22px}.model-import h3{margin-top:0}.model-import details{margin-top:18px}.model-import [hidden]{display:none}.model-import .actions{margin:12px 0}
+
+.file-import{margin:20px 0;padding:20px;border:2px solid #22c55e}.file-import h3{margin-top:0}.file-import [hidden]{display:none}

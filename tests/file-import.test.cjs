@@ -1,0 +1,10 @@
+const fs=require('fs'),assert=require('node:assert/strict'),{test}=require('node:test'),F=require('../file-import.js');
+const near=(a,b)=>assert(Math.abs(a-b)<1e-8);
+const v=[[0,0,0],[20,0,0],[20,20,0],[0,20,0],[0,0,20],[20,0,20],[20,20,20],[0,20,20]],faces=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[1,2,6],[1,6,5],[2,3,7],[2,7,6],[3,0,4],[3,4,7]];
+const ascii='solid cube\n'+faces.map(f=>'facet normal 0 0 0\nouter loop\n'+f.map(i=>'vertex '+v[i].join(' ')).join('\n')+'\nendloop\nendfacet').join('\n')+'\nendsolid cube';
+const buf=Buffer.from(ascii);const ab=buf.buffer.slice(buf.byteOffset,buf.byteOffset+buf.length);
+test('STL ASCII cube gives correct volume and area',()=>{const g=F.stl(ab);near(g.volume,8000);assert.equal(g.area,2400);assert.deepEqual(g.dimensions,[20,20,20]);});
+test('binary STL supports solid-prefixed headers',()=>{const b=Buffer.alloc(84+faces.length*50);b.write('solid binary');b.writeUInt32LE(faces.length,80);faces.forEach((f,i)=>f.forEach((idx,j)=>v[idx].forEach((x,k)=>b.writeFloatLE(x,84+i*50+12+j*12+k*4))));near(F.stl(b.buffer.slice(b.byteOffset,b.byteOffset+b.length)).volume,8000);});
+test('estimate accounts for infill, shell, support and scale',()=>{const g=F.stl(ab),o={density:1.24,infill:15,wall:0.8,flow:5,overhead:30,support:0,scale:1};const e=F.estimate(g,o);near(e.grams,3.51168);assert(e.seconds>300);assert(F.estimate(g,{...o,support:20}).grams>e.grams);near(F.estimate(g,{...o,infill:100}).grams,9.92);near(F.estimate(g,{...o,infill:100,scale:2}).grams,79.36);assert.throws(()=>F.estimate(g,{...o,flow:0}));});
+test('invalid and empty models are rejected',()=>{assert.throws(()=>F.stl(new ArrayBuffer(0)));assert.throws(()=>F.mesh([]));});
+fs.mkdirSync('../fixtures',{recursive:true});fs.writeFileSync('../fixtures/cube.stl',ascii);fs.writeFileSync('../fixtures/cube.json',JSON.stringify({v,faces}));

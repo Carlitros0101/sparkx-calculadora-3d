@@ -23,7 +23,7 @@ Electricidad = horas × W / 1.000 × CLP/kWh. Material = gramos × precio de bob
 
 Recargo: precio neto = costo × (1 + porcentaje). Margen sobre venta: precio neto = costo / (1 - porcentaje), con porcentaje menor que 100 %. IVA opcional se agrega al precio neto. Los costos son desembolsos brutos; no se realiza tratamiento de crédito fiscal. Los resultados se calculan sin redondear y se muestran en pesos enteros.
 
-Importación de G-code: reconoce encabezados explícitos de tiempo y gramos. No convierte metros en gramos ni interpreta archivos 3MF o G-code binario. Si un encabezado no se reconoce, ingresa el dato manualmente y verifica el resultado contra el laminador.
+Importación de G-code: reconoce encabezados explícitos de tiempo y gramos. No convierte metros en gramos ni interpreta G-code binario. Si un encabezado no se reconoce, ingresa el dato manualmente y verifica el resultado contra el laminador.
 
 ## GitHub Pages
 
@@ -45,4 +45,14 @@ Diseño personal inspirado en el verde, negro y blanco de Creality; no es una ap
 
 ## Importación de fichas públicas
 
-MakerWorld, Printables y Thingiverse: lectura mediante Jina Reader sin clave. Se envía únicamente la URL pública normalizada, sin parámetros de seguimiento ni credenciales. Nombre y autor se importan; tiempo/peso de perfiles requieren selección y aplicación explícitas, quedan marcados como referencia y se exportan con su origen a Excel. No se calcula tiempo ni peso desde STL. El ID de perfil del enlace se conserva pero no se presume su correspondencia con la lista leída. Si hay CAPTCHA, bloqueo, límite o campos ausentes, el usuario puede pegar texto público o ingresar sus valores de Creality Print. No hay garantía de lectura en todas las fichas ni de permanencia del servicio externo.
+MakerWorld, Printables y Thingiverse: lectura mediante Jina Reader sin clave. Se envía únicamente la URL pública normalizada, sin parámetros de seguimiento ni credenciales. Nombre y autor se importan; tiempo/peso de perfiles requieren selección y aplicación explícitas, quedan marcados como referencia y se exportan con su origen a Excel. STL y 3MF se cargan por separado en Calcula desde tu archivo 3D. El ID de perfil del enlace se conserva pero no se presume su correspondencia con la lista leída. Si hay CAPTCHA, bloqueo, límite o campos ausentes, el usuario puede pegar texto público o ingresar sus valores de Creality Print. No hay garantía de lectura en todas las fichas ni de permanencia del servicio externo.
+
+## Carga de STL y 3MF
+
+La carga local completa gramos y tiempo y recalcula costo y venta con tus precios. STL binario y ASCII: unidades en milímetros. 3MF: unidades, objetos, instancias, transformaciones y componentes externos incluidos en el archivo. Los resultados en Metadata/slice_info.config de Creality Print se muestran por placa; selecciona la placa a cotizar. Solo se usan placas con tiempo y peso positivos explícitos. El peso total importado deja la purga adicional en cero. No se presume que un perfil de otro equipo corresponde a la SPARKX.
+
+Sin resultados de laminado, se estima: volumen de paredes/tapas ≈ área superficial × espesor, limitado por el volumen sólido; interior × relleno; soportes como porcentaje adicional. Peso = volumen de plástico × densidad. Tiempo = volumen / flujo efectivo × factor de movimientos + 5 minutos. La escala modifica volumen, área y dimensiones. Son supuestos editables; requieren mallas cerradas y orientación consistente. No sustituye laminar en Creality Print ni modela aceleración, refrigeración o cambios de color. Purga multicolor se ingresa por separado. Los datos conservan su origen y ajustes en historial, resumen y Excel.
+
+Máximo 100 MB y un millón de triángulos. 3MF necesita un navegador con DecompressionStream deflate-raw (Chrome/Edge actuales). Archivos cifrados, ZIP64, XML con entidades y modelos incompletos no son compatibles.
+
+Pruebas: node --test tests/*.test.cjs.

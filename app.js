@@ -54,6 +54,43 @@
     refresh();
   }
   fields.forEach(key=>el(key).addEventListener('input',()=>{if(['hours','minutes'].includes(key))el('timeSource').value='Manual';if(['grams','purge'].includes(key))el('weightSource').value='Manual';refresh(true);}));
+  let loadedFile=null,fileSequence=0;
+  const fileNode=id=>document.getElementById('file-'+id);
+  function applyFile(){
+    if(!loadedFile)return;
+    try{
+      const {data,name}=loadedFile,mode=fileNode('mode').value;
+      let values,origin;
+      if(mode==='estimate'){
+        if(!data.geometry)throw Error('Este archivo no contiene geometría compatible para estimar.');
+        const options=Object.fromEntries(['density','infill','wall','flow','overhead','support','scale'].map(k=>[k,fileNode(k).value]));
+        values=SparkxFiles.estimate(data.geometry,options);
+        origin='Estimación geométrica '+name+' · '+JSON.stringify(options);
+        fileNode('message').textContent='Estimación aproximada: '+values.grams.toFixed(1)+' g · '+Math.ceil(values.seconds/60)+' min. Dimensiones: '+values.dimensions.map(x=>x.toFixed(1)).join(' × ')+' mm. Verifica en Creality Print antes de cotizar; requiere una malla cerrada y orientación correcta. La purga multicolor se agrega por separado.';
+      }else{
+        values=data.plates[Number(mode)];if(!values)throw Error('Elige una placa válida.');
+        origin='Datos del laminador en '+name+' · '+values.label;
+        fileNode('message').textContent='Tiempo y peso leídos del 3MF: '+values.label+'. Confirma que corresponde a tu SPARKX en Creality Print. Peso total importado; purga adicional en cero.';
+      }
+      const minutes=Math.max(1,Math.ceil(values.seconds/60));el('hours').value=Math.floor(minutes/60);el('minutes').value=minutes%60;el('grams').value=values.grams.toFixed(2);
+      el('timeSource').value=origin;el('weightSource').value=origin;el('name').value=name.replace(/\.(stl|3mf)$/i,'').slice(0,100);
+      el('modelUrl').value='';el('modelAuthor').value='';el('modelProfile').value='';
+      if(mode!=='estimate')el('purge').value=0;
+      refresh(true);
+    }catch(error){fileNode('message').textContent=error.message;}
+  }
+  fileNode('upload').addEventListener('change',async event=>{
+    const seq=++fileSequence,file=event.target.files[0];loadedFile=null;fileNode('apply').disabled=true;fileNode('settings').hidden=true;
+    if(!file)return;fileNode('message').textContent='Leyendo archivo en tu dispositivo…';
+    try{
+      const data=await SparkxFiles.read(file);if(seq!==fileSequence)return;
+      loadedFile={data,name:file.name};const options=data.plates.map((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.label+' · '+p.grams.toFixed(1)+' g · '+Math.ceil(p.seconds/60)+' min';return o;});
+      if(data.geometry){const o=document.createElement('option');o.value='estimate';o.textContent='Estimar desde el modelo 3D';options.push(o);}
+      fileNode('mode').replaceChildren(...options);fileNode('mode').value=data.plates.length?'0':'estimate';fileNode('settings').hidden=false;fileNode('apply').disabled=false;applyFile();
+    }catch(error){if(seq===fileSequence)fileNode('message').textContent='No se importó: '+error.message+' El cálculo anterior se conserva.';}
+  });
+  fileNode('apply').addEventListener('click',applyFile);
+  fileNode('mode').addEventListener('change',applyFile);
   el('file').addEventListener('change',async()=>{
     const file=el('file').files[0]; if(!file)return;
     if(file.size>50*1024*1024){el('import').textContent='Archivo demasiado grande (máximo 50 MB). Ingresa tiempo y gramos manualmente.';return;}
