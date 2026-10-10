@@ -86,7 +86,8 @@
     visit(next,comp.getAttribute('objectid'),[transform(comp.getAttribute('transform')),...chain],[...stack,key]);
    }
   }
-  for(const item of descendants(children(models.get(main).documentElement,'build')[0],'item'))if(item.getAttribute('printable')!=='0')visit(main,item.getAttribute('objectid'),[transform(item.getAttribute('transform'))],[]);
+  const build=children(models.get(main).documentElement,'build')[0];if(!build)throw Error('El 3MF no contiene una lista de objetos para imprimir.');
+  for(const item of descendants(build,'item'))if(item.getAttribute('printable')!=='0')visit(main,item.getAttribute('objectid'),[transform(item.getAttribute('transform'))],[]);
   return mesh(triangles);
  }
  function estimate(g,o){
@@ -94,7 +95,9 @@
   if(n('density')<=0||n('flow')<=0||n('scale')<=0||n('scale')>100||n('wall')<0||n('overhead')<0||n('support')<0||n('infill')<0||n('infill')>100)throw Error('Revisa densidad, escala, relleno y flujo.');
   const volume=g.volume*n('scale')**3,area=g.area*n('scale')**2;
   const shell=Math.min(volume,area*n('wall')),plastic=(shell+(volume-shell)*n('infill')/100)*(1+n('support')/100);
-  return{grams:plastic/1000*n('density'),seconds:plastic/n('flow')*(1+n('overhead')/100)+300,dimensions:g.dimensions.map(x=>x*n('scale'))};
+  const grams=plastic/1000*n('density'),seconds=plastic/n('flow')*(1+n('overhead')/100)+300;
+  if(!Number.isFinite(grams+seconds))throw Error('Los ajustes producen una estimación demasiado grande.');
+  return{grams,seconds,dimensions:g.dimensions.map(x=>x*n('scale'))};
  }
  async function read(file){
   if(file.size>MAX)throw Error('Máximo 100 MB por archivo.');const buffer=await file.arrayBuffer();

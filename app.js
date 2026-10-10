@@ -65,7 +65,7 @@
         if(!data.geometry)throw Error('Este archivo no contiene geometría compatible para estimar.');
         const options=Object.fromEntries(['density','infill','wall','flow','overhead','support','scale'].map(k=>[k,fileNode(k).value]));
         values=SparkxFiles.estimate(data.geometry,options);
-        origin='Estimación geométrica '+name+' · '+JSON.stringify(options);
+        origin='Estimación '+name+' · relleno '+options.infill+' %, espesor '+options.wall+' mm, densidad '+options.density+' g/cm³, escala '+options.scale+', soportes '+options.support+' %, flujo '+options.flow+' mm³/s, movimientos '+options.overhead+' %';
         fileNode('message').textContent='Estimación aproximada: '+values.grams.toFixed(1)+' g · '+Math.ceil(values.seconds/60)+' min. Dimensiones: '+values.dimensions.map(x=>x.toFixed(1)).join(' × ')+' mm. Verifica en Creality Print antes de cotizar; requiere una malla cerrada y orientación correcta. La purga multicolor se agrega por separado.';
       }else{
         values=data.plates[Number(mode)];if(!values)throw Error('Elige una placa válida.');
