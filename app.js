@@ -43,10 +43,18 @@
       el('breakdown').replaceChildren(...result.rows.map(([label,value]) => { const row=document.createElement('tr'); const a=document.createElement('td'); const b=document.createElement('td'); a.textContent=label; b.textContent=money(value); b.className='text-end tabular-nums'; row.append(a,b); return row; }));
       el('summary').value=[state.name || 'Impresión 3D','SPARKX i7 · '+state.qty+' pieza(s)', 'Tiempo del trabajo: '+state.hours+' h '+state.minutes+' min', 'Filamento: '+state.grams+' g + '+state.purge+' g de purga adicional', 'Electricidad: '+money(result.rows[2][1])+(state.energyOn ? ' ('+state.watts+' W; '+state.kwh+' CLP/kWh)' : ' (excluida)'), 'Costo total: '+money(result.cost), 'Venta antes de IVA: '+money(result.net), 'IVA adicional: '+money(result.tax), 'Precio total: '+money(result.total)+' · Por pieza: '+money(result.unit),...(state.modelUrl?['Modelo: '+state.modelUrl,'Autor: '+(state.modelAuthor||'No reconocido')]:[]),'Origen del tiempo: '+(state.timeSource||'Manual'),'Origen del peso: '+(state.weightSource||'Manual')].join('\n');
       renderQuote(state,result);
+      if(document.getElementById('quote-status').textContent==='Revisa los datos del cálculo antes de generar una cotización.')document.getElementById('quote-status').textContent='';
+      const estimated=/Estimación|Referencia|Pendiente/.test((state.timeSource||'')+(state.weightSource||''));
+      const missing=result.hours<=0||Number(state.grams)<=0;
+      const manual=[state.timeSource,state.weightSource].some(x=>!x||x==='Manual');
+      el('quality').textContent=missing?'Faltan tiempo o gramos del trabajo. El costo puede estar incompleto.':estimated?'Cotización estimada: confirma en Creality Print el tiempo y los gramos de todas las placas que vas a entregar.':manual?'Datos manuales: revisa tiempo y gramos contra Creality Print antes de cotizar.':'Tiempo y peso con origen registrado. Revisa que correspondan al trabajo completo y a tu impresora.';
+      el('maintenance-detail').textContent=state.machineOn?'Mantenimiento: '+money(Number(state.maint))+'/h × '+result.hours.toFixed(2)+' h = '+money(result.rows[4][1])+' por trabajo. '+(result.cost>0&&result.rows[4][1]/result.cost>0.3?'Representa '+(result.rows[4][1]/result.cost*100).toFixed(0)+' % del costo: revisa tu presupuesto de mantenimiento.':''):'Mantenimiento y recuperación de compra excluidos.';
+      el('margin-detail').textContent='Recargo real sobre costo: '+(result.cost>0?result.profit/result.cost*100:0).toFixed(1)+' % · Margen real sobre venta neta: '+(result.net>0?result.profit/result.net*100:0).toFixed(1)+' %.';
     } catch(error) {
       result=null; el('error').textContent=error.message; el('energy-detail').textContent='';
       document.getElementById('quote-sheet').setAttribute('data-invalid','true');
       document.getElementById('quote-status').textContent='Revisa los datos del cálculo antes de generar una cotización.';
+      el('quality').textContent='Revisa los campos indicados antes de cotizar.';el('maintenance-detail').textContent='';el('margin-detail').textContent='';
       ['cost','sale','unit'].forEach(key=>el(key).textContent='—'); el('profit').textContent='Revisa los valores'; el('breakdown').replaceChildren(); el('summary').value='';
     }
     if (save) {try {localStorage.setItem('sparkx-cost-v1', JSON.stringify({privateContent:{inputs:state,tariffVersion:3}}));} catch {document.getElementById('action-status').textContent='Tu navegador no permite guardar ajustes. Puedes seguir calculando.';}}
@@ -58,6 +66,11 @@
     refresh();
   }
   fields.forEach(key=>el(key).addEventListener('input',()=>{if(['hours','minutes'].includes(key))el('timeSource').value='Manual';if(['grams','purge'].includes(key))el('weightSource').value='Manual';refresh(true);}));
+  document.getElementById('use-maintenance-reserve').addEventListener('click',()=>{el('maint').value=100;refresh(true);document.getElementById('action-status').textContent='Reserva provisional de $100/h aplicada. Ajusta este valor con tus gastos y horas reales; se cobra solo si incluyes uso de impresora.';});
+  document.getElementById('confirm-slicer').addEventListener('click',()=>{
+    if(!result||result.hours<=0||Number(el('grams').value)<=0){el('quality').textContent='Primero completa tiempo y gramos positivos del trabajo.';return;}
+    el('timeSource').value='Creality Print · verificado por el usuario';el('weightSource').value='Creality Print · verificado por el usuario';refresh(true);
+  });
   let loadedFile=null,fileSequence=0;
   const fileNode=id=>document.getElementById('file-'+id);
   function applyFile(){
@@ -70,16 +83,17 @@
         const options=Object.fromEntries(['density','infill','wall','flow','overhead','support','scale'].map(k=>[k,fileNode(k).value]));
         values=SparkxFiles.estimate(data.geometry,options);
         origin='Estimación '+name+' · relleno '+options.infill+' %, espesor '+options.wall+' mm, densidad '+options.density+' g/cm³, escala '+options.scale+', soportes '+options.support+' %, flujo '+options.flow+' mm³/s, movimientos '+options.overhead+' %';
-        fileNode('message').textContent='Estimación aproximada: '+values.grams.toFixed(1)+' g · '+Math.ceil(values.seconds/60)+' min. Dimensiones: '+values.dimensions.map(x=>x.toFixed(1)).join(' × ')+' mm. Verifica en Creality Print antes de cotizar; requiere una malla cerrada y orientación correcta. La purga multicolor se agrega por separado.';
+        fileNode('message').textContent='Estimación aproximada: '+values.grams.toFixed(1)+' g · '+Math.ceil(values.seconds/60)+' min. Extensión de '+(data.kind==='3MF'?'todo el proyecto (puede incluir varias placas)':'la geometría')+': '+values.dimensions.map(x=>x.toFixed(1)).join(' × ')+' mm. '+(data.kind==='3MF'?'Se suman todos los objetos imprimibles; no se ha identificado una placa individual. ':'')+'Verifica en Creality Print antes de cotizar; requiere una malla cerrada y orientación correcta. La purga multicolor se agrega por separado.';
       }else{
-        values=data.plates[Number(mode)];if(!values)throw Error('Elige una placa válida.');
+        values=mode==='all'?{label:'Todas las placas con resultados ('+data.plates.length+')',seconds:data.plates.reduce((sum,p)=>sum+p.seconds,0),grams:data.plates.reduce((sum,p)=>sum+p.grams,0)}:data.plates[Number(mode)];if(!values)throw Error('Elige una placa válida.');
         origin='Datos del laminador en '+name+' · '+values.label;
-        fileNode('message').textContent='Tiempo y peso leídos del 3MF: '+values.label+'. Confirma que corresponde a tu SPARKX en Creality Print. Peso total importado; purga adicional en cero.';
+        fileNode('message').textContent='Tiempo y peso leídos del 3MF: '+values.label+'. '+(mode==='all'?'La suma incluye solo las placas con tiempo y peso reconocidos; verifica si falta alguna placa del pedido. ':'')+'Confirma que corresponde a tu SPARKX en Creality Print. Peso total importado; purga adicional en cero.';
       }
       const minutes=Math.max(1,Math.ceil(values.seconds/60));el('hours').value=Math.floor(minutes/60);el('minutes').value=minutes%60;el('grams').value=values.grams.toFixed(2);
       el('timeSource').value=origin;el('weightSource').value=origin;el('name').value=name.replace(/\.(stl|3mf)$/i,'').slice(0,100);
       el('modelUrl').value='';el('modelAuthor').value='';el('modelProfile').value='';
       if(mode!=='estimate')el('purge').value=0;
+      fileNode('message').textContent+=' Revisa Piezas obtenidas: el archivo no determina automáticamente cuántas unidades completas entregarás.';
       refresh(true);
     }catch(error){fileNode('message').textContent=error.message;}
   }
@@ -89,8 +103,9 @@
     try{
       const data=await SparkxFiles.read(file);if(seq!==fileSequence)return;
       loadedFile={data,name:file.name};const options=data.plates.map((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.label+' · '+p.grams.toFixed(1)+' g · '+Math.ceil(p.seconds/60)+' min';return o;});
+      if(data.plates.length>1){const o=document.createElement('option');o.value='all';o.textContent='Sumar todas las placas con resultados ('+data.plates.length+')';options.unshift(o);}
       if(data.geometry){const o=document.createElement('option');o.value='estimate';o.textContent='Estimar desde el modelo 3D';options.push(o);}
-      fileNode('mode').replaceChildren(...options);fileNode('mode').value=data.plates.length?'0':'estimate';fileNode('settings').hidden=false;fileNode('apply').disabled=false;applyFile();
+      fileNode('mode').replaceChildren(...options);fileNode('mode').value=data.plates.length>1?'all':data.plates.length?'0':'estimate';fileNode('settings').hidden=false;fileNode('apply').disabled=false;applyFile();
     }catch(error){if(seq===fileSequence)fileNode('message').textContent='No se importó: '+error.message+' El cálculo anterior se conserva.';}
   });
   fileNode('apply').addEventListener('click',applyFile);
@@ -107,8 +122,10 @@
       const grams=text.match(/^;\s*(?:filament used \[g\]|total filament used \[g\]|total filament weight \[g\])\s*[:=]\s*([\d.,\s]+)\s*$/mi);
       let weight=null;
       if(grams){const values=grams[1].split(',').map(x=>Number(x.trim())).filter(x=>Number.isFinite(x));if(values.length)weight=values.reduce((a,b)=>a+b,0);}
-      if(sec!==null){el('timeSource').value='G-code de Creality Print / laminador';const mins=Math.ceil(sec/60);el('hours').value=Math.floor(mins/60);el('minutes').value=mins%60;}
-      if(weight!==null){el('weightSource').value='G-code (peso total)';el('grams').value=weight.toFixed(2);el('purge').value=0;}
+      if(sec!==null){el('timeSource').value='G-code '+(file.name||'de Creality Print / laminador');const mins=Math.ceil(sec/60);el('hours').value=Math.floor(mins/60);el('minutes').value=mins%60;}
+      else el('timeSource').value='Pendiente de confirmar: tiempo anterior conservado';
+      if(weight!==null){el('weightSource').value='G-code '+(file.name||'')+' (peso total)';el('grams').value=weight.toFixed(2);el('purge').value=0;}
+      else el('weightSource').value='Pendiente de confirmar: peso anterior conservado';
       el('import').textContent=(sec!==null?'Tiempo importado. ':'Tiempo no reconocido: ingresar manualmente. ')+(weight!==null?'Peso total importado; purga adicional puesta en 0. Verifica contra Creality Print.':'Peso en gramos no reconocido: ingresar manualmente.');
       refresh(true);
     } catch {el('import').textContent='No se pudo leer el archivo. Ingresa los datos manualmente.';}
@@ -127,6 +144,7 @@
   function renderQuote(s,r){
     const q=id=>document.getElementById('quote-'+id),text=(id,value)=>q(id).textContent=value;
     document.getElementById('quote-sheet').setAttribute('data-invalid','false');
+    text('title',/Estimación|Referencia|Pendiente/.test((s.timeSource||'')+(s.weightSource||''))?'COTIZACIÓN ESTIMADA':'COTIZACIÓN');
     text('business',s.business.trim()||'Mi taller 3D');text('contact',s.contact);text('number',s.quoteNumber||'Se asignará al imprimir');
     const rawDate=s.quoteDate||new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const date=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.split('-').reverse().join('/'):rawDate;
@@ -139,9 +157,10 @@
     q('costs').hidden=!s.quoteCosts;
     q('breakdown').replaceChildren(...r.rows.slice(0,10).map(([label,value])=>{const row=document.createElement('tr');for(const x of [label,money(value)]){const c=document.createElement('td');c.textContent=x;row.append(c);}return row;}));
     text('assumptions','Bobina: '+money(Number(s.spoolPrice))+' / '+s.spoolWeight+' g · Electricidad: '+(s.energyOn?s.watts+' W × '+s.kwh+' CLP/kWh':'excluida')+' · Ganancia: '+s.percent+' % ('+(s.profitMode==='margin'?'margen sobre venta':'recargo sobre costo')+').');
-    text('estimate-note',/Estimación/.test((s.timeSource||'')+(s.weightSource||''))?'Material y tiempo aproximados. Confirmar al laminar en Creality Print antes de aceptar la cotización.':'Confirmar que el material y tiempo corresponden a la configuración final de Creality Print.');
+    text('estimate-note',/Estimación|Referencia|Pendiente/.test((s.timeSource||'')+(s.weightSource||''))?'Hay datos estimados, de referencia o pendientes. Confirmar material y tiempo al laminar en Creality Print antes de aceptar la cotización.':'Confirmar que el material y tiempo corresponden a la configuración final de Creality Print.');
   }
   document.getElementById('preview-quote').addEventListener('click',()=>{if(prepareQuote()){document.getElementById('quote-sheet').hidden=false;document.getElementById('quote-status').textContent='Vista previa actualizada. Usa Imprimir / PDF para imprimir o guardar como PDF.';}});
+  document.getElementById('new-quote').addEventListener('click',()=>{el('quoteNumber').value='';el('quoteDate').value='';el('client').value='';el('notes').value='';el('delivery').value='';document.getElementById('quote-sheet').hidden=true;refresh(true);document.getElementById('quote-status').textContent='Nueva cotización preparada con los valores actuales. Completa el cliente y las observaciones; el número y la fecha se asignarán al generar el documento.';});
   document.getElementById('print-result').addEventListener('click',()=>{if(prepareQuote())window.print();});
   window.addEventListener?.('beforeprint',()=>{if(result)renderQuote(read(),result);});
   const dbKey='sparkx-jobs-v1';

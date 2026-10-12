@@ -15,3 +15,5 @@
 .quote-sheet[data-invalid="true"]{display:none!important}
 
 @media screen and (max-width:640px){.quote-table th:not(:first-child){white-space:normal}.quote-table td:first-child{width:35%}.quote-heading h2{font-size:23px}}
+
+.quality-note{padding:12px 16px;border-left:4px solid #17cc5f;background:#edf4ef;font-size:14px;line-height:1.6}.quote-ident h1{overflow-wrap:anywhere;max-width:330px}

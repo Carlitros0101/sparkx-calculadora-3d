@@ -60,3 +60,9 @@ Pruebas: node --test tests/*.test.cjs.
 ## Cotizaciones para imprimir
 
 Imprimir cotización / PDF genera un documento A4 con taller, contacto, cliente, número, fecha, validez, entrega, servicio, cantidad, precio neto unitario, subtotal, IVA opcional, total y precio final por pieza. Incluye material, tiempo, procedencia y observaciones. El desglose de costos y ganancia se puede ocultar al enviar al cliente. Ver cotización muestra el documento antes de imprimir. Número y fecha se asignan al preparar la cotización si están vacíos; son editables y se conservan con cada trabajo. El historial previo sigue siendo compatible.
+
+## Revisión de datos y configuración
+
+Se distingue cotización estimada, datos manuales y datos de laminador. Si se modifica un dato confirmado, vuelve a origen Manual. El usuario puede marcar tiempo y gramos revisados contra Creality Print; esto es una declaración manual, no una conexión al laminador. Una importación parcial de G-code señala como pendientes los datos conservados. Los 3MF permiten sumar todas las placas con resultados completos o elegir una; las placas sin resultados reconocidos no se incluyen en la suma. La geometría sin resultados representa todo el proyecto y sus dimensiones son la extensión de sus objetos, no una pieza o placa individual.
+
+Mantenimiento inicial: $100/h como presupuesto hipotético editable, cobrado solo al activar uso de impresora. Los valores existentes no cambian al actualizar. El botón de reserva provisional aplica el valor explícitamente. Se muestran costo de mantenimiento del trabajo y margen efectivo sobre venta. Nueva cotización conserva los cálculos pero vacía cliente, observaciones, entrega, número y fecha para evitar reutilizar datos del pedido anterior.
