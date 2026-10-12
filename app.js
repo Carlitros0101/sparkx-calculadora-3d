@@ -154,7 +154,7 @@
     const q=id=>document.getElementById('quote-'+id),text=(id,value)=>q(id).textContent=value;
     document.getElementById('quote-sheet').setAttribute('data-invalid','false');
     text('title',/Estimación|Referencia|Pendiente/.test((s.timeSource||'')+(s.weightSource||''))?'COTIZACIÓN ESTIMADA':'COTIZACIÓN');
-    text('business',s.business.trim()||'Mi taller 3D');text('contact',s.contact);text('number',s.quoteNumber||'Se asignará al imprimir');
+    text('business',s.business.trim()||'Carlitros3D');text('contact',s.contact);text('number',s.quoteNumber||'Se asignará al imprimir');
     const rawDate=s.quoteDate||new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const date=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.split('-').reverse().join('/'):rawDate;
     text('date',date);text('client',s.client.trim()||'Por completar');text('client-contact',s.clientContact||'');text('validity',s.validity||'Por acordar');text('delivery',s.delivery||'Por acordar');
