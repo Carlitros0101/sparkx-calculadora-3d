@@ -1,4 +1,4 @@
-const CACHE='sparkx-app-v8';
+const CACHE='sparkx-app-v9';
 const FILES=['./','./index.html','./styles.css','./app.js','./excel.js','./model-import.js','./file-import.js','./workshop-core.js','./workshop.js','./workshop-sync.js','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));

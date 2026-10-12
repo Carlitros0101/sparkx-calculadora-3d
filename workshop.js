@@ -85,7 +85,7 @@ if(data.basket.length){const t=C.totals(data.basket);for(const x of data.basket)
  $('quote-assumptions').textContent='Cada producto conserva sus precios de filamento, mínimo, embalaje, despacho, ganancia e IVA. El desglose suma los importes de las líneas.';
  const sums=new Map();for(const x of data.basket)for(const [label,n] of x.result.rows.slice(0,-2))sums.set(label,(sums.get(label)||0)+n);$('quote-breakdown').replaceChildren(...Array.from(sums,([label,n])=>{const tr=document.createElement('tr');for(const text of [label,money(n)]){const td=document.createElement('td');td.textContent=text;tr.append(td);}return tr;}));$('quote-estimate-note').textContent='Los precios y condiciones corresponden a cada producto guardado. Confirma tiempos, materiales y configuración en Creality Print.';
 }
-const logo=$('quote-logo');if(data.brand.logo&&/^data:image\/(png|jpeg|webp);base64,/.test(data.brand.logo)){logo.src=data.brand.logo;logo.hidden=false;}else logo.hidden=true;
+const logo=$('quote-logo');if(data.brand.logo&&/^data:image\/(png|jpeg|webp);base64,/.test(data.brand.logo)){logo.src=data.brand.logo;logo.hidden=false;}else{logo.src=$('brand-logo').src;logo.hidden=false;}
 document.documentElement.style.setProperty('--quote-accent',/^#[0-9a-f]{6}$/i.test(data.brand.color)?data.brand.color:'#17cc5f');$('quote-terms').textContent=data.brand.terms||'';document.title=(s.quoteNumber?s.quoteNumber+' · ':'')+(s.business||'Carlitros3D')+' · Cotización';
 }
 function snapshot(){return{format:'carlitros3d-workshop',version:1,workshop:data,calculator:JSON.parse(localStorage.getItem('sparkx-cost-v1')||'null'),history:A.history(),exportedAt:new Date().toISOString()};}
