@@ -66,3 +66,31 @@ Imprimir cotización / PDF genera un documento A4 con taller, contacto, cliente,
 Se distingue cotización estimada, datos manuales y datos de laminador. Si se modifica un dato confirmado, vuelve a origen Manual. El usuario puede marcar tiempo y gramos revisados contra Creality Print; esto es una declaración manual, no una conexión al laminador. Una importación parcial de G-code señala como pendientes los datos conservados. Los 3MF permiten sumar todas las placas con resultados completos o elegir una; las placas sin resultados reconocidos no se incluyen en la suma. La geometría sin resultados representa todo el proyecto y sus dimensiones son la extensión de sus objetos, no una pieza o placa individual.
 
 Mantenimiento inicial: $100/h como presupuesto hipotético editable, cobrado solo al activar uso de impresora. Los valores existentes no cambian al actualizar. El botón de reserva provisional aplica el valor explícitamente. Se muestran costo de mantenimiento del trabajo y margen efectivo sobre venta. Nueva cotización conserva los cálculos pero vacía cliente, observaciones, entrega, número y fecha para evitar reutilizar datos del pedido anterior.
+
+## Gestión del taller: 15 mejoras
+
+1. Registrar tiempo, gramos y costo reales por pedido para comparar con su previsión.
+2. Guardar bobinas por material/color, densidad y precio.
+3. Distribuir piezas y purga por bobina con precios independientes.
+4. Precio mínimo neto por producto/trabajo, antes del IVA opcional.
+5. Embalaje y despacho separados, incluidos en la base del recargo/margen.
+6. Historial de mantenimiento y reserva según gasto dividido por contador de horas de un mismo período.
+7. Stock restante, aviso de stock bajo/insuficiente y descuento al registrar impresión terminada. El descuento es idempotente: no se aplica dos veces.
+8. Cotización con varios productos y condiciones de cada línea. Evita repetir despacho en todas las líneas de una entrega conjunta.
+9. Clientes con contacto y búsqueda de pedidos anteriores.
+10. Estados cotizado, aceptado, pendiente de pago, en impresión, terminado, entregado y cancelado.
+11. Registro manual de abonos, saldo y excedente; no realiza pagos o transferencias.
+12. Logo PNG/JPG/WebP (hasta 250 KB), color y condiciones en el PDF generado mediante impresión del navegador. El número de cotización se usa en el título de impresión.
+13. Cola estimada de una impresora según horas disponibles al día. No descuenta pausas, fallas o tiempo ya ejecutado.
+14. Resumen por mes de creación del pedido, con ventas netas comprometidas, costos reales o previstos, abonos y horas. Excluye cotizaciones sin aceptar y cancelados. Exportación de pedidos a Excel.
+15. Taller privado con inicio de sesión de ChatGPT y respaldo sincronizado por usuario.
+
+## PC y celular
+
+La calculadora pública sigue en GitHub Pages. Sus datos son locales a cada navegador. El taller privado está en https://carlitros3d-taller.carlitrosparra96.chatgpt.site y requiere la misma cuenta de ChatGPT en PC y celular. La sincronización es explícita: Guardar datos locales en la nube después de editar; Traer datos de la nube antes de continuar en otro equipo. Si otro dispositivo modificó la nube, se rechaza una escritura basada en una versión anterior. No se sobrescribe silenciosamente.
+
+Para trasladar tus datos de GitHub: Respaldar taller completo → entrar al taller privado → Restaurar respaldo del taller → Guardar datos locales en la nube. El respaldo contiene taller, clientes, pedidos, bobinas, marca, cotización en preparación, ajustes de la calculadora e historial anterior. La restauración reemplaza los datos locales tras validar y conserva una copia recuperable. Los archivos de modelo STL/3MF no se sincronizan ni se suben. La nube tiene un límite de 2 MB por respaldo del taller.
+
+## Límites de resultados reales
+
+El cálculo automático de costo real reparte el peso y tiempo reales proporcionalmente entre productos y colores y elimina la reserva por fallas. Si cambió la composición de materiales o hubo otros gastos, ingresa el costo real total. Ajusta manualmente el stock si la distribución real por color fue diferente. El descuento automático requiere vincular una bobina al cálculo o usar la distribución multicolor antes de crear el pedido. Cambiar precios de bobinas no modifica las cotizaciones ya guardadas.

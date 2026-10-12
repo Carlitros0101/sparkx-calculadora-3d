@@ -2,9 +2,11 @@
 (() => {
   const root = document.getElementById('sparkx-cost');
   const el = key => root.querySelector('#sx-' + key);
-  const quoteFields=['business','contact','client','quoteNumber','quoteDate','validity','delivery','quoteCosts'];
+  const quoteFields=['business','contact','client','clientContact','quoteNumber','quoteDate','validity','delivery','quoteCosts'];
+  const extraFields=['minimum','packaging','shipping'];
   const fields = ['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat',...quoteFields];
-  const textFields=['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','energyOn','machineOn','profitMode',...quoteFields];
+  fields.push(...extraFields,'materialsJson','materialId');
+  const textFields=['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','energyOn','machineOn','profitMode','materialsJson','materialId',...quoteFields];
   const money = value => new Intl.NumberFormat('es-CL', {style:'currency',currency:'CLP',maximumFractionDigits:0}).format(value);
   let result = null;
   function read() { return Object.fromEntries(fields.map(key => [key, el(key).type === 'checkbox' ? el(key).checked : el(key).value])); }
@@ -18,18 +20,20 @@
     if (n('vat') > 100) throw Error('Revisa el porcentaje de IVA.');
     if (s.profitMode === 'margin' && n('percent') >= 100) throw Error('El margen sobre venta debe ser menor que 100 %.');
     const hours = n('hours') + n('minutes')/60;
-    const material = n('grams') * n('spoolPrice') / n('spoolWeight');
-    const purge = n('purge') * n('spoolPrice') / n('spoolWeight');
+    const materials=JSON.parse(s.materialsJson||'[]');
+    const multicolor=materials.length?WorkshopCore.materialCost(materials):null;
+    const material = multicolor?multicolor.material:n('grams') * n('spoolPrice') / n('spoolWeight');
+    const purge = multicolor?multicolor.purge:n('purge') * n('spoolPrice') / n('spoolWeight');
     const energy = s.energyOn ? hours * n('watts') / 1000 * n('kwh') : 0;
     const machine = s.machineOn ? hours * n('machinePrice') / n('life') : 0;
     const maint = s.machineOn ? hours * n('maint') : 0;
     const risk = (material + purge + energy + machine + maint) * n('risk') / 100;
     const labor = (n('prep') + n('finish')) / 60 * n('laborRate');
-    const cost = material + purge + energy + machine + maint + risk + labor + n('other');
-    const net = s.profitMode === 'margin' ? cost / (1-n('percent')/100) : cost * (1+n('percent')/100);
+    const cost = material + purge + energy + machine + maint + risk + labor + n('other')+Number(s.packaging||0)+Number(s.shipping||0);
+    const net = Math.max(Number(s.minimum||0),s.profitMode === 'margin' ? cost / (1-n('percent')/100) : cost * (1+n('percent')/100));
     const tax = net * n('vat')/100;
     if (![cost,net,tax].every(Number.isFinite)) throw Error('Los valores son demasiado grandes. Revisa los datos.');
-    return {hours,cost,net,tax,total:net+tax,profit:net-cost,unit:(net+tax)/n('qty'),rows:[['Piezas y soportes',material],['Purga y torre multicolor',purge],['Electricidad',energy],['Recuperación de impresora',machine],['Mantenimiento',maint],['Reserva por fallas',risk],['Tu tiempo de trabajo',labor],['Otros gastos',n('other')],['Costo total',cost],['Ganancia antes de IVA',net-cost],['Venta antes de IVA',net],['IVA adicional',tax]]};
+    return {hours,cost,net,tax,total:net+tax,profit:net-cost,unit:(net+tax)/n('qty'),rows:[['Piezas y soportes',material],['Purga y torre multicolor',purge],['Electricidad',energy],['Recuperación de impresora',machine],['Mantenimiento',maint],['Reserva por fallas',risk],['Tu tiempo de trabajo',labor],['Otros gastos',n('other')],['Embalaje',Number(s.packaging||0)],['Entrega / despacho',Number(s.shipping||0)],['Costo total',cost],['Ganancia antes de IVA',net-cost],['Venta antes de IVA',net],['IVA adicional',tax]]};
   }
   function refresh(save=false) {
     const state = read();
@@ -43,10 +47,11 @@
       el('breakdown').replaceChildren(...result.rows.map(([label,value]) => { const row=document.createElement('tr'); const a=document.createElement('td'); const b=document.createElement('td'); a.textContent=label; b.textContent=money(value); b.className='text-end tabular-nums'; row.append(a,b); return row; }));
       el('summary').value=[state.name || 'Impresión 3D','SPARKX i7 · '+state.qty+' pieza(s)', 'Tiempo del trabajo: '+state.hours+' h '+state.minutes+' min', 'Filamento: '+state.grams+' g + '+state.purge+' g de purga adicional', 'Electricidad: '+money(result.rows[2][1])+(state.energyOn ? ' ('+state.watts+' W; '+state.kwh+' CLP/kWh)' : ' (excluida)'), 'Costo total: '+money(result.cost), 'Venta antes de IVA: '+money(result.net), 'IVA adicional: '+money(result.tax), 'Precio total: '+money(result.total)+' · Por pieza: '+money(result.unit),...(state.modelUrl?['Modelo: '+state.modelUrl,'Autor: '+(state.modelAuthor||'No reconocido')]:[]),'Origen del tiempo: '+(state.timeSource||'Manual'),'Origen del peso: '+(state.weightSource||'Manual')].join('\n');
       renderQuote(state,result);
+      window.Workshop?.renderQuote(state,result);
       if(document.getElementById('quote-status').textContent==='Revisa los datos del cálculo antes de generar una cotización.')document.getElementById('quote-status').textContent='';
       const estimated=/Estimación|Referencia|Pendiente/.test((state.timeSource||'')+(state.weightSource||''));
       const missing=result.hours<=0||Number(state.grams)<=0;
-      const manual=[state.timeSource,state.weightSource].some(x=>!x||x==='Manual');
+      const manual=[state.timeSource,state.weightSource].some(x=>!x||x.startsWith('Manual'));
       el('quality').textContent=missing?'Faltan tiempo o gramos del trabajo. El costo puede estar incompleto.':estimated?'Cotización estimada: confirma en Creality Print el tiempo y los gramos de todas las placas que vas a entregar.':manual?'Datos manuales: revisa tiempo y gramos contra Creality Print antes de cotizar.':'Tiempo y peso con origen registrado. Revisa que correspondan al trabajo completo y a tu impresora.';
       el('maintenance-detail').textContent=state.machineOn?'Mantenimiento: '+money(Number(state.maint))+'/h × '+result.hours.toFixed(2)+' h = '+money(result.rows[4][1])+' por trabajo. '+(result.cost>0&&result.rows[4][1]/result.cost>0.3?'Representa '+(result.rows[4][1]/result.cost*100).toFixed(0)+' % del costo: revisa tu presupuesto de mantenimiento.':''):'Mantenimiento y recuperación de compra excluidos.';
       el('margin-detail').textContent='Recargo real sobre costo: '+(result.cost>0?result.profit/result.cost*100:0).toFixed(1)+' % · Margen real sobre venta neta: '+(result.net>0?result.profit/result.net*100:0).toFixed(1)+' %.';
@@ -90,11 +95,13 @@
         fileNode('message').textContent='Tiempo y peso leídos del 3MF: '+values.label+'. '+(mode==='all'?'La suma incluye solo las placas con tiempo y peso reconocidos; verifica si falta alguna placa del pedido. ':'')+'Confirma que corresponde a tu SPARKX en Creality Print. Peso total importado; purga adicional en cero.';
       }
       const minutes=Math.max(1,Math.ceil(values.seconds/60));el('hours').value=Math.floor(minutes/60);el('minutes').value=minutes%60;el('grams').value=values.grams.toFixed(2);
+      el('materialsJson').value='';
       el('timeSource').value=origin;el('weightSource').value=origin;el('name').value=name.replace(/\.(stl|3mf)$/i,'').slice(0,100);
       el('modelUrl').value='';el('modelAuthor').value='';el('modelProfile').value='';
       if(mode!=='estimate')el('purge').value=0;
       fileNode('message').textContent+=' Revisa Piezas obtenidas: el archivo no determina automáticamente cuántas unidades completas entregarás.';
       refresh(true);
+      window.Workshop?.render();
     }catch(error){fileNode('message').textContent=error.message;}
   }
   fileNode('upload').addEventListener('change',async event=>{
@@ -127,7 +134,9 @@
       if(weight!==null){el('weightSource').value='G-code '+(file.name||'')+' (peso total)';el('grams').value=weight.toFixed(2);el('purge').value=0;}
       else el('weightSource').value='Pendiente de confirmar: peso anterior conservado';
       el('import').textContent=(sec!==null?'Tiempo importado. ':'Tiempo no reconocido: ingresar manualmente. ')+(weight!==null?'Peso total importado; purga adicional puesta en 0. Verifica contra Creality Print.':'Peso en gramos no reconocido: ingresar manualmente.');
+      if(weight!==null)el('materialsJson').value='';
       refresh(true);
+      window.Workshop?.render();
     } catch {el('import').textContent='No se pudo leer el archivo. Ingresa los datos manualmente.';}
   });
   let saved=null; try {saved=JSON.parse(localStorage.getItem('sparkx-cost-v1'));} catch {}
@@ -148,21 +157,21 @@
     text('business',s.business.trim()||'Mi taller 3D');text('contact',s.contact);text('number',s.quoteNumber||'Se asignará al imprimir');
     const rawDate=s.quoteDate||new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const date=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate.split('-').reverse().join('/'):rawDate;
-    text('date',date);text('client',s.client.trim()||'Por completar');text('validity',s.validity||'Por acordar');text('delivery',s.delivery||'Por acordar');
+    text('date',date);text('client',s.client.trim()||'Por completar');text('client-contact',s.clientContact||'');text('validity',s.validity||'Por acordar');text('delivery',s.delivery||'Por acordar');
     text('job',s.name||'Impresión 3D');text('qty',s.qty);text('unit',new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:2,maximumFractionDigits:2}).format(r.net/Number(s.qty)));text('line',money(r.net));
     text('net',money(r.net));text('tax',money(r.tax));text('tax-label','IVA adicional ('+s.vat+' %)');text('total',money(r.total));text('unit-total',money(r.unit));
     text('time',s.hours+' h '+s.minutes+' min');text('material',s.grams+' g + '+s.purge+' g de purga adicional');
     text('notes',s.notes||'Sin observaciones adicionales.');text('origin',s.timeSource===s.weightSource?(s.timeSource||'Manual'):'Tiempo: '+(s.timeSource||'Manual')+' · Peso: '+(s.weightSource||'Manual'));
     text('model',s.modelUrl||'');q('model').hidden=!s.modelUrl;
     q('costs').hidden=!s.quoteCosts;
-    q('breakdown').replaceChildren(...r.rows.slice(0,10).map(([label,value])=>{const row=document.createElement('tr');for(const x of [label,money(value)]){const c=document.createElement('td');c.textContent=x;row.append(c);}return row;}));
+    q('breakdown').replaceChildren(...r.rows.slice(0,-2).map(([label,value])=>{const row=document.createElement('tr');for(const x of [label,money(value)]){const c=document.createElement('td');c.textContent=x;row.append(c);}return row;}));
     text('assumptions','Bobina: '+money(Number(s.spoolPrice))+' / '+s.spoolWeight+' g · Electricidad: '+(s.energyOn?s.watts+' W × '+s.kwh+' CLP/kWh':'excluida')+' · Ganancia: '+s.percent+' % ('+(s.profitMode==='margin'?'margen sobre venta':'recargo sobre costo')+').');
     text('estimate-note',/Estimación|Referencia|Pendiente/.test((s.timeSource||'')+(s.weightSource||''))?'Hay datos estimados, de referencia o pendientes. Confirmar material y tiempo al laminar en Creality Print antes de aceptar la cotización.':'Confirmar que el material y tiempo corresponden a la configuración final de Creality Print.');
   }
   document.getElementById('preview-quote').addEventListener('click',()=>{if(prepareQuote()){document.getElementById('quote-sheet').hidden=false;document.getElementById('quote-status').textContent='Vista previa actualizada. Usa Imprimir / PDF para imprimir o guardar como PDF.';}});
-  document.getElementById('new-quote').addEventListener('click',()=>{el('quoteNumber').value='';el('quoteDate').value='';el('client').value='';el('notes').value='';el('delivery').value='';document.getElementById('quote-sheet').hidden=true;refresh(true);document.getElementById('quote-status').textContent='Nueva cotización preparada con los valores actuales. Completa el cliente y las observaciones; el número y la fecha se asignarán al generar el documento.';});
+  document.getElementById('new-quote').addEventListener('click',()=>{el('quoteNumber').value='';el('quoteDate').value='';el('client').value='';el('clientContact').value='';el('notes').value='';el('delivery').value='';document.getElementById('quote-sheet').hidden=true;refresh(true);document.getElementById('quote-status').textContent='Nueva cotización preparada con los valores actuales. Completa el cliente y las observaciones; el número y la fecha se asignarán al generar el documento.';});
   document.getElementById('print-result').addEventListener('click',()=>{if(prepareQuote())window.print();});
-  window.addEventListener?.('beforeprint',()=>{if(result)renderQuote(read(),result);});
+  window.addEventListener?.('beforeprint',()=>{if(result){renderQuote(read(),result);window.Workshop?.renderQuote(read(),result);}});
   const dbKey='sparkx-jobs-v1';
   const dbStatus=document.getElementById('history-status');
   let records=[],storageDamaged=false;
@@ -170,7 +179,7 @@
     if(!Array.isArray(items)||items.length>5000)throw Error('El respaldo debe contener hasta 5.000 trabajos.');
     return items.map(item=>{
       if(!item||typeof item.id!=='string'||item.id.length>100||!item.state||typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt)))throw Error('El respaldo contiene un trabajo inválido.');
-      const state=Object.fromEntries(fields.map(key=>[key,item.state[key]??(textFields.includes(key)?'':undefined)]));
+      const state=Object.fromEntries(fields.map(key=>[key,item.state[key]??(extraFields.includes(key)?0:textFields.includes(key)?'':undefined)]));
       if(typeof state.name!=='string'||state.name.length>100||typeof state.notes!=='string'||state.notes.length>500)throw Error('Nombre o notas inválidos.');
       const calculated=calculate(state);
       return{id:item.id,createdAt:item.createdAt,state,result:calculated};
@@ -239,9 +248,10 @@
     const value=modelNode('profiles').value,p=importedModel&&value!==''?importedModel.profiles[Number(value)]:null;if(!p)return;
     el('modelProfile').value=p.label;
     if(p.minutes!==null){el('hours').value=Math.floor(p.minutes/60);el('minutes').value=p.minutes%60;el('timeSource').value='Referencia '+importedModel.site+' · '+p.label;}
-    if(p.grams!==null){el('grams').value=p.grams;el('weightSource').value='Referencia '+importedModel.site+' · purga y soportes por confirmar';}
+    if(p.grams!==null){el('grams').value=p.grams;el('materialsJson').value='';el('weightSource').value='Referencia '+importedModel.site+' · purga y soportes por confirmar';}
     refresh(true);modelNode('message').textContent='Referencia aplicada. Confirma los datos al laminar en Creality Print. '+(p.grams===null?'Los gramos no se cambiaron: el sitio no publicó un peso verificable.':'');
   });
   renderHistory();
+  window.SparkxApp={read,calculate,refresh,currentRecord,history:()=>records,load:state=>{restore({privateContent:{inputs:state,tariffVersion:3}});refresh(true);},preview:()=>{if(prepareQuote()){document.getElementById('quote-sheet').hidden=false;window.Workshop?.renderQuote(read(),result);}}};
   if('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 })();
