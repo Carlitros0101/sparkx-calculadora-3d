@@ -39,5 +39,6 @@ function validate(data){
  for(const item of data.basket)totals([item]);for(const m of data.maintenance){number(m.cost,'mantenimiento');number(m.hours,'horas');}
  return data;
 }
-scope.WorkshopCore={number,id,materialCost,totals,payments,requirements,complete,monthReport,schedule,validate};if(typeof module!=='undefined')module.exports=scope.WorkshopCore;
+function restoreLocal(storage,values,backup){const previous=Object.fromEntries(Object.keys(values).map(k=>[k,storage.getItem(k)]));storage.setItem('carlitros-before-restore',backup);try{for(const [k,v] of Object.entries(values)){if(v===null)storage.removeItem(k);else storage.setItem(k,v);}}catch(error){for(const [k,v] of Object.entries(previous)){if(v===null)storage.removeItem(k);else storage.setItem(k,v);}throw error;}}
+scope.WorkshopCore={number,id,materialCost,totals,payments,requirements,complete,monthReport,schedule,validate,restoreLocal};if(typeof module!=='undefined')module.exports=scope.WorkshopCore;
 })(typeof globalThis!=='undefined'?globalThis:this);
