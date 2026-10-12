@@ -48,7 +48,7 @@
 <h3>Trabajo completo</h3>
   <div class="viz-controls">
     <label class="form-label">Nombre del trabajo<input class="form-control" id="sx-name" value="Mi primera impresión" maxlength="100"></label>
-    <label class="form-label">Estado del trabajo<select class="form-select" id="sx-status"><option>Cotización</option><option>En impresión</option><option>Terminado</option></select></label><label class="form-label">Notas / cliente (opcional)<input class="form-control" id="sx-notes" maxlength="500" placeholder="Ej.: llavero azul, pedido de 10 unidades"></label><label class="form-label">Piezas obtenidas<input class="form-control" id="sx-qty" type="number" min="1" step="1" value="1"></label>
+    <label class="form-label">Estado del trabajo<select class="form-select" id="sx-status"><option>Cotización</option><option>En impresión</option><option>Terminado</option></select></label><label class="form-label">Observaciones del pedido (se imprimen en la cotización)<input class="form-control" id="sx-notes" maxlength="500" placeholder="Ej.: llavero azul, pedido de 10 unidades"></label><label class="form-label">Piezas obtenidas<input class="form-control" id="sx-qty" type="number" min="1" step="1" value="1"></label>
     <label class="form-label">Horas de impresión<input class="form-control" id="sx-hours" type="number" min="0" step="1" value="0"></label>
     <label class="form-label">Minutos adicionales<input class="form-control" id="sx-minutes" type="number" min="0" max="59" step="1" value="0"></label>
     <label class="form-label">Filamento: piezas y soportes (g)<input class="form-control" id="sx-grams" type="number" min="0" step="0.1" value="0"></label>
@@ -58,7 +58,7 @@
     <label class="form-label">Archivo de impresión<input class="form-control" type="file" accept=".gcode" id="sx-file"></label>
     <div class="text-small" id="sx-import" aria-live="polite">Solo datos explícitos del encabezado. El peso importado es total: incluye la purga si el archivo la contabiliza.</div>
   </details>
-  <p class="text-small" id="sx-data-origin"></p><h3>Tus filamentos</h3>
+  <p class="text-small" id="sx-data-origin"></p><p class="quality-note" id="sx-quality" role="status"></p><p class="text-small">En Creality Print lamina las placas que forman el pedido. Copia el tiempo total y los gramos totales arriba. Si el peso incluye purga y torre, deja la purga adicional en cero.</p><button type="button" class="btn btn-outline" id="confirm-slicer">Ya revisé tiempo y gramos en Creality Print</button><h3>Tus filamentos</h3>
   <div class="text-small">Creality Hyper PLA · Blanco, negro, azul, verde y amarillo · Mismo precio por bobina</div>
   <div class="viz-controls">
     <label class="form-label">Precio por bobina ($)<input class="form-control" id="sx-spoolPrice" type="number" min="0" step="1" value="13990"></label>
@@ -85,21 +85,22 @@
     <div class="viz-controls">
       <label class="form-label">Compra de la impresora ($)<input class="form-control" id="sx-machinePrice" type="number" min="0" value="399990"></label>
       <label class="form-label">Horas de uso para recuperar compra · supuesto<input class="form-control" id="sx-life" type="number" min="1" value="3000"></label>
-      <label class="form-label">Reserva mantenimiento ($ por hora de impresión)<input class="form-control" id="sx-maint" type="number" min="0" value="0"></label>
+      <label class="form-label">Reserva de mantenimiento (CLP por cada hora impresa)<input class="form-control" id="sx-maint" type="number" min="0" value="100"></label>
     </div>
   </details>
-  <h3>Venta</h3>
+  <p class="text-small" id="sx-maintenance-detail" role="status"></p><p class="text-small">Mantenimiento por hora = presupuesto de repuestos y mantenimiento ÷ horas de impresión del mismo período. Ejemplo hipotético: $100.000 para 1.000 horas = $100/h. La recuperación de compra se calcula por separado.</p><button type="button" class="btn btn-outline" id="use-maintenance-reserve">Usar reserva provisional de $100/h</button>
+<h3>Venta</h3>
   <div class="viz-controls">
     <label class="form-label">Otros gastos por trabajo ($)<input class="form-control" id="sx-other" type="number" min="0" value="0"></label>
     <label class="form-label">Cómo calcular tu ganancia<select class="form-select" id="sx-profitMode"><option value="markup">Recargo sobre el costo</option><option value="margin">Margen sobre el precio de venta</option></select></label>
     <label class="form-label">Ganancia (%) · editable<input class="form-control" id="sx-percent" type="number" min="0" value="30"></label>
     <label class="form-label">IVA adicional (%) · opcional<input class="form-control" id="sx-vat" type="number" min="0" max="100" value="0"></label>
   </div>
-  <details class="quote-settings"><summary>Datos de la cotización para imprimir</summary>
+  <p class="text-small" id="sx-margin-detail" role="status"></p><details class="quote-settings"><summary>Datos de la cotización para imprimir</summary>
 <div class="viz-controls">
 <label class="form-label">Nombre de tu taller<input class="form-control" id="sx-business" value="Mi taller 3D" maxlength="100"></label>
 <label class="form-label">Contacto del taller<input class="form-control" id="sx-contact" placeholder="Teléfono, correo o dirección" maxlength="200"></label>
-<label class="form-label">Cliente<input class="form-control" id="sx-client" placeholder="Nombre del cliente" maxlength="150"></label>
+<label class="form-label">Cliente<input class="form-control" id="sx-client" placeholder="Nombre del cliente de esta cotización" maxlength="150"></label>
 <label class="form-label">Número de cotización<input class="form-control" id="sx-quoteNumber" placeholder="Se asigna automáticamente al imprimir" maxlength="60"></label>
 <label class="form-label">Fecha<input class="form-control" type="date" id="sx-quoteDate"></label>
 <label class="form-label">Validez de la cotización<input class="form-control" id="sx-validity" value="7 días desde la fecha de emisión" maxlength="150"></label>
@@ -109,7 +110,7 @@
 </details>
 <h3>Desglose del trabajo</h3>
   <table class="table table-sm"><thead><tr><th>Concepto</th><th class="text-end">CLP</th></tr></thead><tbody id="sx-breakdown"></tbody></table>
-  <div class="actions"><button type="button" class="btn btn-primary" id="save-job">Guardar trabajo en mi base</button><button type="button" class="btn" id="export-current">Exportar trabajo a Excel</button><button type="button" class="btn" id="copy-result">Copiar resumen</button><button type="button" class="btn" id="download-result">Guardar resumen</button><button type="button" class="btn" id="print-result">Imprimir cotización / PDF</button></div><button type="button" class="btn" id="preview-quote">Ver cotización</button><p id="quote-status" class="text-small" role="status"></p><div id="action-status" role="status" class="text-small"></div><label class="form-label">Resumen para copiar<textarea class="form-control" id="sx-summary" rows="9" readonly></textarea></label>
+  <div class="actions"><button type="button" class="btn btn-primary" id="save-job">Guardar trabajo en mi base</button><button type="button" class="btn" id="export-current">Exportar trabajo a Excel</button><button type="button" class="btn" id="copy-result">Copiar resumen</button><button type="button" class="btn" id="download-result">Guardar resumen</button><button type="button" class="btn" id="print-result">Imprimir cotización / PDF</button></div><button type="button" class="btn" id="new-quote">Nueva cotización con estos valores</button><button type="button" class="btn" id="preview-quote">Ver cotización</button><p id="quote-status" class="text-small" role="status"></p><div id="action-status" role="status" class="text-small"></div><label class="form-label">Resumen para copiar<textarea class="form-control" id="sx-summary" rows="9" readonly></textarea></label>
 </div>
 <section class="history" aria-labelledby="history-title">
 <div class="history-heading"><div><span class="brand-label">TU BASE DE IMPRESIONES</span><h3 id="history-title">Historial de trabajos</h3></div><span class="count" id="history-count">0 trabajo(s) guardado(s)</span></div>
