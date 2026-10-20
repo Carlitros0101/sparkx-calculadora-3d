@@ -30,10 +30,14 @@
     const risk = (material + purge + energy + machine + maint) * n('risk') / 100;
     const labor = (n('prep') + n('finish')) / 60 * n('laborRate');
     const cost = material + purge + energy + machine + maint + risk + labor + n('other')+Number(s.packaging||0)+Number(s.shipping||0);
-    const net = Math.max(Number(s.minimum||0),s.profitMode === 'margin' ? cost / (1-n('percent')/100) : cost * (1+n('percent')/100));
-    const tax = net * n('vat')/100;
+    const baseNet = Math.max(Number(s.minimum||0),s.profitMode === 'margin' ? cost / (1-n('percent')/100) : cost * (1+n('percent')/100));
+    const rawTotal = baseNet * (1+n('vat')/100);
+    // Ignore binary arithmetic noise at exact hundreds, without rounding down real fractions.
+    const total = Math.ceil((rawTotal-4*Number.EPSILON*rawTotal)/100)*100;
+    const net = total / (1+n('vat')/100);
+    const tax = total-net;
     if (![cost,net,tax].every(Number.isFinite)) throw Error('Los valores son demasiado grandes. Revisa los datos.');
-    return {hours,cost,net,tax,total:net+tax,profit:net-cost,unit:(net+tax)/n('qty'),rows:[['Piezas y soportes',material],['Purga y torre multicolor',purge],['Electricidad',energy],['Recuperación de impresora',machine],['Mantenimiento',maint],['Reserva por fallas',risk],['Tu tiempo de trabajo',labor],['Otros gastos',n('other')],['Embalaje',Number(s.packaging||0)],['Entrega / despacho',Number(s.shipping||0)],['Costo total',cost],['Ganancia antes de IVA',net-cost],['Venta antes de IVA',net],['IVA adicional',tax]]};
+    return {hours,cost,net,tax,total,profit:net-cost,unit:total/n('qty'),rows:[['Piezas y soportes',material],['Purga y torre multicolor',purge],['Electricidad',energy],['Recuperación de impresora',machine],['Mantenimiento',maint],['Reserva por fallas',risk],['Tu tiempo de trabajo',labor],['Otros gastos',n('other')],['Embalaje',Number(s.packaging||0)],['Entrega / despacho',Number(s.shipping||0)],['Costo total',cost],['Ganancia antes de IVA',net-cost],['Venta antes de IVA',net],['IVA adicional',tax]]};
   }
   function refresh(save=false) {
     const state = read();

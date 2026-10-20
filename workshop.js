@@ -20,6 +20,8 @@ function applyMulti(rows){const t=C.materialCost(rows);A.load({...A.read(),mater
 function currentItems(){return data.basket.length?data.basket:[A.currentRecord()];}
 function orderTable(filter=''){return data.orders.filter(o=>(o.name+' '+o.client).toLocaleLowerCase().includes(filter.toLocaleLowerCase())).slice().reverse().map(o=>{const p=C.payments(o);return`<tr><td>${escape(o.name)}<br><small>${escape(o.client||'Sin cliente')} · ${escape(o.createdAt.slice(0,10))}</small></td><td>${escape(o.status)}</td><td>${money(o.result.total)}</td><td>${money(p.paid)} / ${money(p.balance)}${p.overpaid?' · excedente '+money(p.overpaid):''}</td><td><button class="btn btn-small" data-order="${escape(o.id)}">Abrir pedido</button></td></tr>`;}).join('');}
 function render(){
+// Refresh draft lines under the current pricing rule; recorded orders stay unchanged.
+data.basket=data.basket.map(x=>({...x,result:A.calculate({...x.state,minimum:x.state.minimum||0,packaging:x.state.packaging||0,shipping:x.state.shipping||0})}));
 const s=A.read(),multi=materials(),month=today().slice(0,7),report=C.monthReport(data.orders,month),basket=data.basket.length?C.totals(data.basket):null;
 root.innerHTML=`<div class="workshop-heading"><span class="brand-label">CARLITROS3D · GESTIÓN DEL TALLER</span><h2>Tu taller, de la cotización a la entrega</h2><p>Costos, bobinas, clientes y pedidos. Guardar un trabajo en el historial y crear un pedido son registros separados.</p></div>
 <p id="workshop-message" role="status">${damaged?'No se pudieron leer los datos del taller. Exporta o restaura un respaldo antes de guardar.':'Tus datos se guardan en este navegador.'}</p>
