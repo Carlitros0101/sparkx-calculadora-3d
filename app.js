@@ -2,7 +2,7 @@
 (() => {
   const root = document.getElementById('sparkx-cost');
   const el = key => root.querySelector('#sx-' + key);
-  const quoteFields=['business','contact','client','clientContact','quoteNumber','quoteDate','validity','delivery','quoteCosts'];
+  const quoteFields=['business','contact','client','clientContact','quoteNumber','quoteDate','validity','delivery','quoteCosts','bankDetails'];
   const extraFields=['minimum','packaging','shipping'];
   const fields = ['name','notes','status','modelUrl','modelAuthor','modelProfile','timeSource','weightSource','qty','hours','minutes','grams','purge','spoolPrice','spoolWeight','risk','energyOn','watts','kwh','prep','finish','laborRate','machineOn','machinePrice','life','maint','other','profitMode','percent','vat',...quoteFields];
   fields.push(...extraFields,'materialsJson','materialId');
@@ -165,6 +165,7 @@
     text('job',s.name||'Impresión 3D');text('qty',s.qty);text('unit',new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:2,maximumFractionDigits:2}).format(r.net/Number(s.qty)));text('line',money(r.net));
     text('net',money(r.net));text('tax',money(r.tax));text('tax-label','IVA adicional ('+s.vat+' %)');text('total',money(r.total));text('unit-total',money(r.unit));
     text('time',s.hours+' h '+s.minutes+' min');text('material',s.grams+' g + '+s.purge+' g de purga adicional');
+    text('bank-details',s.bankDetails||'');q('payment').hidden=!String(s.bankDetails||'').trim();
     text('notes',s.notes||'Sin observaciones adicionales.');text('origin',s.timeSource===s.weightSource?(s.timeSource||'Manual'):'Tiempo: '+(s.timeSource||'Manual')+' · Peso: '+(s.weightSource||'Manual'));
     text('model',s.modelUrl||'');q('model').hidden=!s.modelUrl;
     q('costs').hidden=!s.quoteCosts;
